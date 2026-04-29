@@ -1,0 +1,10 @@
+{
+  "name": "stocket",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "turbo": "^2.9.6"
+  }
+}
