@@ -1,13 +1,157 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// 기업 기본 정보 (DART 기준)
+// ─────────────────────────────────────────────
+model Company {
+  id          String   @id @default(cuid())
+  corpCode    String   @unique  // DART 고유번호 (8자리)
+  corpName    String            // 기업명
+  stockCode   String?  @unique  // 종목코드 (6자리, 비상장 시 null)
+  indutyCode  String?           // 업종코드
+  indutyName  String?           // 업종명
+  sector      String?           // 대분류 섹터
+  market      String?           // 코스피/코스닥/코넥스
+  ceoName     String?           // 대표자명
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  financials      FinancialStatement[]
+  stockPrices     StockPrice[]
+  stockMetrics    StockMetrics[]
+
+  @@index([indutyCode])
+  @@index([sector])
+  @@map("companies")
+}
+
+// ─────────────────────────────────────────────
+// 재무제표 (DART API)
+// ─────────────────────────────────────────────
+model FinancialStatement {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  year        Int               // 사업연도 (2023, 2024 ...)
+  quarter     Int?              // 분기 (1,2,3,4) null이면 연간
+  reportType  String            // "CFS" 연결재무 | "OFS" 별도재무
+
+  // 손익계산서
+  revenue         BigInt?       // 매출액
+  operatingProfit BigInt?       // 영업이익
+  netIncome       BigInt?       // 당기순이익
+
+  // 재무상태표
+  totalAssets     BigInt?       // 자산총계
+  totalLiability  BigInt?       // 부채총계
+  totalEquity     BigInt?       // 자본총계
+
+  // 계산 지표 (저장해두면 조회 빠름)
+  revenueGrowthRate   Float?    // 매출 성장률 (YoY %)
+  operatingMargin     Float?    // 영업이익률 (%)
+  debtRatio           Float?    // 부채비율 (부채/자본 %)
+  roe                 Float?    // ROE (%)
+  roa                 Float?    // ROA (%)
+
+  fetchedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, year, quarter, reportType])
+  @@index([companyId, year])
+  @@map("financial_statements")
+}
+
+// ─────────────────────────────────────────────
+// 주가 일별 데이터 (한국투자증권 API)
+// ─────────────────────────────────────────────
+model StockPrice {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  date        DateTime @db.Date     // 거래일
+  open        Int                   // 시가
+  high        Int                   // 고가
+  low         Int                   // 저가
+  close       Int                   // 종가
+  volume      BigInt                // 거래량
+  changeRate  Float?                // 전일 대비 등락률 (%)
+
+  @@unique([companyId, date])
+  @@index([companyId, date(sort: Desc)])
+  @@map("stock_prices")
+}
+
+// ─────────────────────────────────────────────
+// 주가 파생 지표 (변동성, 모멘텀 등)
+// ─────────────────────────────────────────────
+model StockMetrics {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  calcDate    DateTime @db.Date     // 계산 기준일
+
+  currentPrice  Int?               // 현재가
+  priceChange   Float?             // 전일 대비 등락률 (%)
+
+  // 변동성
+  volatility20d Float?             // 20일 변동성 (%)
+  volatility60d Float?             // 60일 변동성 (%)
+
+  // 모멘텀
+  momentum1m  Float?               // 1개월 수익률 (%)
+  momentum3m  Float?               // 3개월 수익률 (%)
+  momentum6m  Float?               // 6개월 수익률 (%)
+
+  // 이동평균
+  ma20        Float?               // 20일 이동평균
+  ma60        Float?               // 60일 이동평균
+  ma120       Float?               // 120일 이동평균
+
+  // 거래량
+  avgVolume20d BigInt?             // 20일 평균 거래량
+
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, calcDate])
+  @@index([companyId, calcDate(sort: Desc)])
+  @@map("stock_metrics")
+}
+
+// ─────────────────────────────────────────────
+// API 캐시 메타 (재수집 시점 관리)
+// ─────────────────────────────────────────────
+model FetchLog {
+  id          String   @id @default(cuid())
+  corpCode    String               // 대상 기업
+  dataType    FetchDataType        // 어떤 데이터를 가져왔는지
+  status      FetchStatus          // 성공/실패
+  message     String?              // 에러 메시지
+  fetchedAt   DateTime @default(now())
+
+  @@index([corpCode, dataType])
+  @@map("fetch_logs")
+}
+
+enum FetchDataType {
+  COMPANY_INFO
+  FINANCIAL_STATEMENT
+  STOCK_PRICE
+  STOCK_METRICS
+}
+
+enum FetchStatus {
+  SUCCESS
+  FAILED
+  PARTIAL
 }
