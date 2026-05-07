@@ -1,4 +1,3 @@
-// src/controllers/company.controller.ts
 import { Request, Response } from "express";
 import { CompanyService } from "./company.service";
 import {
@@ -9,7 +8,8 @@ import {
 } from "./company.dto";
 
 export class CompanyController {
-  private readonly chatsService: CompanyService = container.chats.service;
+  constructor(private readonly companyService: CompanyService) {}
+
   // GET /api/companies/:corpCode
   async getDetail(req: Request, res: Response): Promise<void> {
     const parsed = GetCompanyRequestDto.safeParse(req.params);
@@ -21,7 +21,7 @@ export class CompanyController {
     }
 
     try {
-      const data = await companyService.getDetail(parsed.data.corpCode);
+      const data = await this.companyService.getDetail(parsed.data.corpCode);
       res.json({ success: true, data });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -39,7 +39,7 @@ export class CompanyController {
       return;
     }
 
-    const data = await companyService.search(parsed.data);
+    const data = await this.companyService.search(parsed.data); // ✅ this. 추가
     res.json({ success: true, ...data });
   }
 
@@ -57,7 +57,7 @@ export class CompanyController {
     }
 
     try {
-      const data = await companyService.getSimilar(parsed.data);
+      const data = await this.companyService.getSimilar(parsed.data); // ✅ this. 추가
       res.json({ success: true, data });
     } catch (err) {
       res.status(404).json({ success: false, error: String(err) });
@@ -65,7 +65,6 @@ export class CompanyController {
   }
 
   // POST /api/companies/compare
-  // body: { corpCodes: ["00126380", "00164779"] }
   async compare(req: Request, res: Response): Promise<void> {
     const parsed = CompareCompaniesRequestDto.safeParse(req.body);
     if (!parsed.success) {
@@ -76,12 +75,10 @@ export class CompanyController {
     }
 
     try {
-      const data = await companyService.compare(parsed.data.corpCodes);
+      const data = await this.companyService.compare(parsed.data.corpCodes);
       res.json({ success: true, data });
     } catch (err) {
       res.status(500).json({ success: false, error: String(err) });
     }
   }
 }
-
-export const companyController = new CompanyController();

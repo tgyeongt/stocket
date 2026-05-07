@@ -1,4 +1,3 @@
-// src/dto/company.dto.ts
 import { z } from "zod";
 
 // ── Request DTOs ──────────────────────────────────────────────

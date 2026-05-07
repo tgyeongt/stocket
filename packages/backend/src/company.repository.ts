@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 
-type SectorAverageResult = {
+export type SectorAverageResult = {
   avg_revenue_growth: number | null;
   avg_operating_margin: number | null;
   avg_debt_ratio: number | null;
