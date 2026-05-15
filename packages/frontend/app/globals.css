@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@font-face {
+  font-family: "Pretendard Variable";
+  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Variable.woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+body {
+  font-family: "Pretendard", sans-serif;
+  background: #0f1117;
+  color: #f1f5f9;
+  min-height: 100vh;
+  padding: 10px 20px;
+}
+
+input[type="range"] {
+  accent-color: #22c55e;
+}
+
+canvas {
+  display: block;
+}
+
+.why-highlight {
+  color: #22c55e;
+  font-weight: 600;
+}
