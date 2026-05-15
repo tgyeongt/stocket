@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # src/jobs/sync_stocks_job.py
 #
 # 실행: python -m src.jobs.sync_stocks_job

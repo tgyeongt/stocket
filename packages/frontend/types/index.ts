@@ -22,6 +22,11 @@ export interface Peer {
   score: number;
 }
 
+export interface PricePoint {
+  date: string;   // YYYY-MM-DD
+  price: number;
+}
+
 export interface CompanyData {
   name: string;
   sector: string;
@@ -35,8 +40,11 @@ export interface CompanyData {
   simulation: {
     baseMarketRate: number;
     baseTrend: number;
+    dataYear?: number;
+    revenueGrowthRate?: number | null;
+    momentum6m?: number | null;
   };
-  priceHistory: number[]; // 12개월 주가 (mock)
+  priceHistory: PricePoint[];
 }
 
 export interface SimulationResult {

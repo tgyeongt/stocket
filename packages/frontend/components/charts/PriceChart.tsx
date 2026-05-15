@@ -9,21 +9,26 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { PRICE_MONTHS } from "@/lib/mockData";
+import type { PricePoint } from "@/types";
 
 interface PriceChartProps {
-  prices: number[];
+  prices: PricePoint[];
   companyName: string;
 }
 
+function formatLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 export default function PriceChart({ prices, companyName }: PriceChartProps) {
-  const data = PRICE_MONTHS.map((month, i) => ({ month, price: prices[i] }));
+  const data = prices.map((p) => ({ month: formatLabel(p.date), price: p.price }));
 
   return (
     <div
       className="relative w-full"
       role="img"
-      aria-label={`${companyName} 12개월 주가 추이 차트`}
+      aria-label={`${companyName} 주가 추이 차트`}
     >
       <ResponsiveContainer width="100%" height={200}>
         <AreaChart
@@ -42,6 +47,7 @@ export default function PriceChart({ prices, companyName }: PriceChartProps) {
             tick={{ fill: "#94A3B8", fontSize: 10 }}
             axisLine={false}
             tickLine={false}
+            interval="preserveStartEnd"
           />
           <YAxis
             tick={{ fill: "#94A3B8", fontSize: 10 }}

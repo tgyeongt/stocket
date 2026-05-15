@@ -109,6 +109,33 @@ export const PaginatedCompaniesDto = z.object({
   totalPages: z.number(),
 });
 
+// ── 프론트엔드 호환 응답 타입 ─────────────────────────────────
+
+export interface CompanyFrontendResponse {
+  name: string;
+  sector: string;
+  code: string;
+  score: number;
+  grade: string;
+  axes: {
+    growth: number;
+    stability: number;
+    profitability: number;
+    momentum: number;
+  };
+  why: Array<{ icon: string; title: string; body: string }>;
+  tags: Array<{ label: string; value: string }>;
+  peers: Array<{ name: string; correlation: number; score: number }>;
+  simulation: {
+    baseMarketRate: number;
+    baseTrend: number;
+    dataYear?: number;
+    revenueGrowthRate?: number | null;
+    momentum6m?: number | null;
+  };
+  priceHistory: Array<{ date: string; price: number }>;
+}
+
 // ── 타입 추출 ─────────────────────────────────────────────────
 
 export type GetCompanyRequest = z.infer<typeof GetCompanyRequestDto>;

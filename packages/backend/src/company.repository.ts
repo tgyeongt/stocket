@@ -36,6 +36,31 @@ export class CompanyRepository {
     });
   }
 
+  // ── 이름으로 단일 상세 조회 ──────────────────────────────────
+
+  findDetailByName(name: string) {
+    return this.prisma.company.findFirst({
+      where: {
+        corpName: { contains: name, mode: "insensitive" },
+        stockCode: { not: null },
+      },
+      include: {
+        financials: {
+          orderBy: [{ year: "desc" }, { quarter: "desc" }],
+          take: 1,
+        },
+        stockMetrics: {
+          orderBy: { calcDate: "desc" },
+          take: 1,
+        },
+        stockPrices: {
+          orderBy: { date: "desc" },
+          take: 90,
+        },
+      },
+    });
+  }
+
   // ── 상세 조회 (재무 + 주가 지표 포함) ────────────────────────
 
   findDetailByCorpCode(corpCode: string) {

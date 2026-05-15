@@ -1,3 +1,4 @@
+import cors from "cors";
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 
@@ -8,26 +9,28 @@ import { CompanyController } from "./company.controller";
 const app = express();
 
 app.use(express.json());
-
-// Prisma 생성
-const prisma = new PrismaClient();
+app.use(cors({ origin: "http://localhost:3000" }));
 
 // 의존성 주입
+const prisma = new PrismaClient();
 const companyRepository = new CompanyRepository(prisma);
-
 const companyService = new CompanyService(companyRepository);
-
 const companyController = new CompanyController(companyService);
 
-// routes
-app.get(
-  "/api/companies/:corpCode",
-  companyController.getDetail.bind(companyController),
-);
-
+// ⚠️ 구체적인 경로를 :param 경로보다 먼저 등록해야 한다
 app.get(
   "/api/companies/search",
   companyController.search.bind(companyController),
+);
+
+app.get(
+  "/api/companies/by-name/:name",
+  companyController.getByName.bind(companyController),
+);
+
+app.get(
+  "/api/companies/:corpCode",
+  companyController.getDetail.bind(companyController),
 );
 
 app.get(
@@ -40,6 +43,7 @@ app.post(
   companyController.compare.bind(companyController),
 );
 
-app.listen(3000, () => {
-  console.log("Server running on 3000");
+const PORT = process.env.PORT ?? 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
 });
