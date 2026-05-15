@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # src/repositories/company_repository.py
 import uuid
 
@@ -6,65 +8,67 @@ from sqlalchemy.orm import Session
 
 from src.database.models import Company
 
+# snake_case 입력 키 → camelCase DB 컬럼명
+_FIELD_MAP = {
+    "corp_code": "corpCode",
+    "corp_name": "corpName",
+    "stock_code": "stockCode",
+    "induty_code": "indutyCode",
+    "induty_name": "indutyName",
+    "sector": "sector",
+    "market": "market",
+    "ceo_name": "ceoName",
+}
+
 
 class CompanyRepository:
     def __init__(self, session: Session) -> None:
         self._s = session
 
     def upsert(self, data: dict) -> None:
-        """
-        corp_code 기준 upsert
-        data 키: corp_code, corp_name, stock_code, induty_code,
-                 induty_name, sector, market, ceo_name
-        """
-        existing = self._s.query(Company).filter_by(corp_code=data["corp_code"]).first()
-
+        existing = self._s.query(Company).filter_by(corpCode=data["corp_code"]).first()
         if existing:
-            for key, val in data.items():
-                if key != "corp_code" and hasattr(existing, key):
-                    setattr(existing, key, val)
+            for snake_key, val in data.items():
+                camel = _FIELD_MAP.get(snake_key, snake_key)
+                if camel != "corpCode" and hasattr(existing, camel):
+                    setattr(existing, camel, val)
         else:
-            self._s.add(Company(id=str(uuid.uuid4()), **data))
+            mapped = {_FIELD_MAP.get(k, k): v for k, v in data.items()}
+            self._s.add(Company(id=str(uuid.uuid4()), **mapped))
 
     def upsert_bulk(self, rows: list[dict]) -> int:
-        """
-        대량 upsert - raw SQL로 성능 최적화
-        반환: upsert된 행 수
-        """
         if not rows:
             return 0
-
         self._s.execute(
             text("""
-                INSERT INTO companies (id, corp_code, corp_name, stock_code, created_at, updated_at)
+                INSERT INTO companies (id, "corpCode", "corpName", "stockCode", "createdAt", "updatedAt")
                 VALUES (gen_random_uuid()::text, :corp_code, :corp_name, :stock_code, NOW(), NOW())
-                ON CONFLICT (corp_code) DO UPDATE SET
-                    corp_name  = EXCLUDED.corp_name,
-                    stock_code = EXCLUDED.stock_code,
-                    updated_at = NOW()
+                ON CONFLICT ("corpCode") DO UPDATE SET
+                    "corpName"  = EXCLUDED."corpName",
+                    "stockCode" = EXCLUDED."stockCode",
+                    "updatedAt" = NOW()
             """),
             rows,
         )
         return len(rows)
 
     def find_by_corp_code(self, corp_code: str) -> Company | None:
-        return self._s.query(Company).filter_by(corp_code=corp_code).first()
+        return self._s.query(Company).filter_by(corpCode=corp_code).first()
 
     def find_all_corp_codes(self, listed_only: bool = True) -> list[str]:
-        q = self._s.query(Company.corp_code)
+        q = self._s.query(Company.corpCode)
         if listed_only:
-            q = q.filter(Company.stock_code.isnot(None))
+            q = q.filter(Company.stockCode.isnot(None))
         return [row[0] for row in q.all()]
 
     def find_without_induty(self, limit: int = 200) -> list[str]:
-        """업종코드가 없는 기업 목록 (enrich 대상)"""
         rows = (
-            self._s.query(Company.corp_code)
-            .filter(Company.induty_code.is_(None))
+            self._s.query(Company.corpCode)
+            .filter(Company.indutyCode.is_(None))
             .limit(limit)
             .all()
         )
         return [r[0] for r in rows]
 
     def update_company_info(self, corp_code: str, data: dict) -> None:
-        self._s.query(Company).filter_by(corp_code=corp_code).update(data)
+        self._s.query(Company).filter_by(corpCode=corp_code).update(data)

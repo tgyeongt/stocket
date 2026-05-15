@@ -1,28 +1,24 @@
+from sqlalchemy.orm import Session
+
 from src.clients.dart_client import DartClient
 from src.repositories.company_repository import CompanyRepository
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class CompanySyncService:
-    def __init__(self, db):
-        self.db = db
-        self.dart_client = DartClient()
-        self.company_repository = CompanyRepository(db)
+    def __init__(self, session: Session) -> None:
+        self._session = session
+        self._dart = DartClient()
+        self._company_repo = CompanyRepository(session)
 
-    async def sync(self):
-        companies = await self.dart_client.get_corp_codes()
+    def sync(self) -> dict:
+        companies = self._dart.fetch_corp_code_list()
+        saved = self._company_repo.upsert_bulk(companies)
+        self._session.commit()
+        logger.info(f"기업 목록 동기화 완료: {saved}개")
+        return {"synced": saved}
 
-        for company in companies:
-            stock_code = company.get("stock_code")
-
-            if not stock_code:
-                continue
-
-            self.company_repository.upsert_company(
-                {
-                    "corp_code": company["corp_code"],
-                    "corp_name": company["corp_name"],
-                    "stock_code": stock_code,
-                }
-            )
-
-        self.db.commit()
+    def close(self) -> None:
+        self._dart.close()

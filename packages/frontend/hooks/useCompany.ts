@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { CompanyData } from "@/types";
-import { MOCK_COMPANIES } from "@/lib/mockData";
 
 interface UseCompanyReturn {
   data: CompanyData | null;
@@ -12,9 +11,7 @@ interface UseCompanyReturn {
 }
 
 export function useCompany(initial?: string): UseCompanyReturn {
-  const [data, setData] = useState<CompanyData | null>(
-    initial ? (MOCK_COMPANIES[initial] ?? null) : null
-  );
+  const [data, setData] = useState<CompanyData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,22 +19,26 @@ export function useCompany(initial?: string): UseCompanyReturn {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Replace with real API call
-      // const res = await fetch(`/api/company/${encodeURIComponent(name)}`);
-      // if (!res.ok) throw new Error("기업을 찾을 수 없어요");
-      // const json: CompanyData = await res.json();
-      // setData(json);
-
-      // Mock: simulate network delay
-      await new Promise((r) => setTimeout(r, 300));
-      const mock = MOCK_COMPANIES[name];
-      if (!mock) throw new Error("등록되지 않은 기업이에요. 다른 기업명을 입력해보세요.");
-      setData(mock);
+      const res = await fetch(
+        `/api/companies/by-name/${encodeURIComponent(name)}`
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "기업을 찾을 수 없어요");
+      }
+      const body = await res.json();
+      setData(body.data as CompanyData);
     } catch (e) {
       setError(e instanceof Error ? e.message : "오류가 발생했어요");
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // 초기 기업명이 있으면 마운트 시 자동 조회
+  useEffect(() => {
+    if (initial) fetchCompany(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { data, loading, error, fetchCompany };
