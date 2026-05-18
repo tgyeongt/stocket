@@ -9,8 +9,7 @@ interface ExplainSectionProps {
 export default function ExplainSection({ company }: ExplainSectionProps) {
   return (
     <Section step={3} label="왜 이런 성장세를 보이는가?">
-
-      <div className="grid grid-cols-2 gap-3 mb-[36px]">
+      <div className="grid grid-cols-2 gap-3 mb-[10px]">
         {company.why.map((card, i) => (
           <div
             key={i}

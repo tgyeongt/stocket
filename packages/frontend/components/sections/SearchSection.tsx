@@ -27,9 +27,15 @@ export default function SearchSection({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const skipSearchRef = useRef(false);
+  const isMountedRef = useRef(false);
 
   // 입력값이 바뀔 때마다 300ms 디바운스 후 검색 API 호출
   useEffect(() => {
+    // 최초 마운트 시 자동완성 건너뜀
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
+    }
     // 칩/제안 선택으로 인한 input 변경은 자동완성 건너뜀
     if (skipSearchRef.current) {
       skipSearchRef.current = false;
