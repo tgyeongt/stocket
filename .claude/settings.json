@@ -3,7 +3,11 @@
     "allow": [
       "Bash(git ls-remote *)",
       "Bash(git fetch *)",
-      "Bash(git ls-tree *)"
+      "Bash(git ls-tree *)",
+      "Bash(mkdir -p /Users/tgyeong/Project/stocket/.github/workflows)"
+    ],
+    "additionalDirectories": [
+      "/Users/tgyeong/Project/stocket/.github"
     ]
   }
 }
