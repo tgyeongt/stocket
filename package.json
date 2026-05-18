@@ -1,6 +1,7 @@
 {
   "name": "stocket",
   "private": true,
+  "packageManager": "npm@10.9.3",
   "workspaces": [
     "packages/*"
   ],
@@ -8,7 +9,10 @@
     "turbo": "^2.9.6"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.2",
     "@prisma/client": "^7.8.0",
+    "hono": "^4.12.19",
+    "next": "^16.2.6",
     "prisma": "^7.8.0",
     "zod": "^4.3.6"
   }
