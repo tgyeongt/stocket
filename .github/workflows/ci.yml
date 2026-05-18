@@ -21,10 +21,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        # npm ci 대신 npm install을 사용: package-lock.json이 macOS에서 생성되어
-        # Linux용 네이티브 바이너리(@tailwindcss/oxide-linux-x64-gnu 등)가 누락됨.
-        # npm install은 현재 플랫폼에 맞는 optional 패키지를 추가 설치한다.
-        run: npm install
+        run: npm ci
 
       - name: Lint (frontend)
         run: npm run lint --workspace=frontend
