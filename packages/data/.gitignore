@@ -1,2 +1,4 @@
 .venv
 .env
+.kis_token_cache.json
+*_token_cache.json
