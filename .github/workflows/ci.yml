@@ -21,7 +21,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        # npm ci 대신 npm install을 사용: package-lock.json이 macOS에서 생성되어
+        # Linux용 네이티브 바이너리(@tailwindcss/oxide-linux-x64-gnu 등)가 누락됨.
+        # npm install은 현재 플랫폼에 맞는 optional 패키지를 추가 설치한다.
+        run: npm install
 
       - name: Lint (frontend)
         run: npm run lint --workspace=frontend
@@ -29,7 +32,5 @@ jobs:
       - name: Build (all packages)
         run: npx turbo build
         env:
-          # Next.js 빌드에 필요한 환경변수가 있으면 여기 추가
-          # NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
