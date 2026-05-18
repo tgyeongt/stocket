@@ -10,6 +10,23 @@ import {
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
+  // GET /api/companies/by-name/:name
+  async getByName(req: Request, res: Response): Promise<void> {
+    const name = (Array.isArray(req.params.name) ? req.params.name[0] : req.params.name)?.trim();
+    if (!name) {
+      res.status(400).json({ success: false, error: "기업명을 입력해주세요" });
+      return;
+    }
+
+    try {
+      const data = await this.companyService.getByName(name);
+      res.json({ success: true, data });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(404).json({ success: false, error: message });
+    }
+  }
+
   // GET /api/companies/:corpCode
   async getDetail(req: Request, res: Response): Promise<void> {
     const parsed = GetCompanyRequestDto.safeParse(req.params);

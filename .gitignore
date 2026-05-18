@@ -1,2 +1,25 @@
+# dependencies
 node_modules
-node_modules
+
+# environment variables
+.env
+.env.*
+
+# turbo local cache
+.turbo/
+
+# compiled output
+dist/
+build/
+
+# typescript
+*.tsbuildinfo
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+
+# IDE / tool-specific
+.vscode/
+.claude/

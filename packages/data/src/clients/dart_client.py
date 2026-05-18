@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # src/clients/dart_client.py
 import io
 import time
@@ -56,7 +58,7 @@ class DartClient:
 
         resp = self._session.get(
             f"{self.BASE_URL}/corpCode.xml",
-            timeout=30,
+            timeout=60,
         )
         resp.raise_for_status()
 

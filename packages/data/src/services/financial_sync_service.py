@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # src/services/financial_sync_service.py
 import time
 
