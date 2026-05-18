@@ -36,15 +36,14 @@ export default function SearchSection({
       return;
     }
 
-    const query = input.trim();
-    if (!query) {
-      setSuggestions([]);
-      setOpen(false);
-      return;
-    }
-
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
+      const query = input.trim();
+      if (!query) {
+        setSuggestions([]);
+        setOpen(false);
+        return;
+      }
       try {
         const res = await fetch(
           `/api/companies/search?query=${encodeURIComponent(query)}&limit=8`
@@ -53,7 +52,7 @@ export default function SearchSection({
         const body = await res.json();
         const seen = new Set<string>();
         const items: Suggestion[] = (body.data ?? [])
-          .map((d: any) => ({
+          .map((d: { corpName?: string; name?: string; stockCode?: string; code?: string }) => ({
             corpName: d.corpName ?? d.name ?? "",
             stockCode: d.stockCode ?? d.code ?? "",
           }))

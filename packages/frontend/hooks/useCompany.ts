@@ -37,7 +37,9 @@ export function useCompany(initial?: string): UseCompanyReturn {
 
   // 초기 기업명이 있으면 마운트 시 자동 조회
   useEffect(() => {
-    if (initial) fetchCompany(initial);
+    if (!initial) return;
+    const id = setTimeout(() => fetchCompany(initial), 0);
+    return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
