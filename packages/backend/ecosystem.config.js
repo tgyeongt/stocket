@@ -10,6 +10,7 @@ module.exports = {
       watch: false,
       env: {
         NODE_ENV: "production",
+        FRONTEND_URL: "https://stocket.site",
       },
     },
   ],
