@@ -5,12 +5,13 @@ module.exports = {
     {
       name: "stocket-backend",
       script: "dist/index.js",
+      cwd: "/home/ubuntu/stocket/packages/backend",
       instances: 1,
       autorestart: true,
       watch: false,
+      env_file: "/home/ubuntu/stocket/packages/backend/.env",
       env: {
         NODE_ENV: "production",
-        FRONTEND_URL: "https://stocket.site",
       },
     },
   ],
