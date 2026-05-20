@@ -22,14 +22,14 @@ class StockSyncService:
 
     def sync_one(self, corp_code: str, days: int = 120) -> dict:
         company = self._company_repo.find_by_corp_code(corp_code)
-        if not company or not company.stock_code:
+        if not company or not company.stockCode:
             return {"corp_code": corp_code, "saved": 0, "status": "skip"}
 
         end_dt = date.today()
         start_dt = end_dt - timedelta(days=days)
 
         raw_prices = self._kis.fetch_daily_prices(
-            company.stock_code,
+            company.stockCode,
             start_dt.strftime("%Y%m%d"),
             end_dt.strftime("%Y%m%d"),
         )
