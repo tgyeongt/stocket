@@ -285,11 +285,15 @@ def _calc_financial_metrics(curr: dict, prev: dict) -> dict:
     equity = curr.get("total_equity")
     prev_rev = prev.get("revenue")
 
-    growth = _safe_div(rev - prev_rev, prev_rev) * 100 if rev and prev_rev else None
-    margin = _safe_div(op, rev) * 100 if op is not None else None
-    debt = _safe_div(liab, equity) * 100 if liab is not None else None
-    roe = _safe_div(ni, equity) * 100 if ni is not None else None
-    roa = _safe_div(ni, assets) * 100 if ni is not None else None
+    def _safe_pct(a, b):
+        v = _safe_div(a, b)
+        return v * 100 if v is not None else None
+
+    growth = _safe_pct(rev - prev_rev, prev_rev) if rev and prev_rev else None
+    margin = _safe_pct(op, rev)
+    debt = _safe_pct(liab, equity)
+    roe = _safe_pct(ni, equity)
+    roa = _safe_pct(ni, assets)
     return {
         "revenue_growth_rate": round(growth, 1) if growth is not None else None,
         "operating_margin": round(margin, 1) if margin is not None else None,
