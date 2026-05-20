@@ -1,3 +1,4 @@
+import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import { PrismaClient } from "@prisma/client";
@@ -9,7 +10,8 @@ import { CompanyController } from "./company.controller";
 const app = express();
 
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:3000" }));
+const ALLOWED_ORIGIN = process.env.FRONTEND_URL ?? "http://localhost:3000";
+app.use(cors({ origin: ALLOWED_ORIGIN }));
 
 // 의존성 주입
 const prisma = new PrismaClient();
