@@ -53,6 +53,10 @@ def _calc_metrics(current: dict, prev: dict | None) -> dict:
     def safe_div(a, b):
         return (a / b) if a is not None and b and b != 0 else None
 
+    def safe_pct(a, b):
+        v = safe_div(a, b)
+        return v * 100 if v is not None else None
+
     rev      = current.get("revenue")
     op       = current.get("operating_profit")
     ni       = current.get("net_income")
@@ -62,12 +66,12 @@ def _calc_metrics(current: dict, prev: dict | None) -> dict:
     prev_rev = prev.get("revenue") if prev else None
 
     return {
-        "revenue_growth_rate": safe_div(rev - prev_rev, prev_rev) * 100
+        "revenue_growth_rate": safe_pct(rev - prev_rev, prev_rev)
                                if rev is not None and prev_rev else None,
-        "operating_margin":    safe_div(op, rev) * 100 if op is not None else None,
-        "debt_ratio":          safe_div(liab, equity) * 100 if liab is not None else None,
-        "roe":                 safe_div(ni, equity) * 100 if ni is not None else None,
-        "roa":                 safe_div(ni, assets) * 100 if ni is not None else None,
+        "operating_margin":    safe_pct(op, rev),
+        "debt_ratio":          safe_pct(liab, equity),
+        "roe":                 safe_pct(ni, equity),
+        "roa":                 safe_pct(ni, assets),
     }
 
 
