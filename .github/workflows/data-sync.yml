@@ -1,0 +1,64 @@
+name: Data Sync
+
+on:
+  schedule:
+    - cron: '0 22 * * 1-5'  # 평일 오전 7시 KST → 주가 동기화
+    - cron: '0 17 * * 6'    # 일요일 새벽 2시 KST → 재무제표 동기화
+  workflow_dispatch:
+    inputs:
+      job:
+        description: '실행할 작업'
+        required: true
+        type: choice
+        default: sync-stocks
+        options:
+          - seed
+          - sync-companies
+          - sync-stocks
+          - sync-financials
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/data
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DART_API_KEY: ${{ secrets.DART_API_KEY }}
+      KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+      KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: packages/data/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── 수동 실행 전용 ─────────────────────────────────────────
+      - name: 초기 데이터 시딩
+        if: github.event.inputs.job == 'seed'
+        run: python -m src.api.seed
+
+      - name: 기업 목록 동기화 (DART)
+        if: github.event.inputs.job == 'sync-companies'
+        run: python -m src.jobs.sync_companies_job
+
+      # ── 스케줄 + 수동 ────────────────────────────────────────
+      - name: 주가 동기화
+        if: |
+          (github.event_name == 'schedule' && github.event.schedule == '0 22 * * 1-5') ||
+          github.event.inputs.job == 'sync-stocks'
+        run: python -m src.jobs.sync_stocks_job
+
+      - name: 재무제표 동기화
+        if: |
+          (github.event_name == 'schedule' && github.event.schedule == '0 17 * * 6') ||
+          github.event.inputs.job == 'sync-financials'
+        run: python -m src.jobs.sync_financials_job
