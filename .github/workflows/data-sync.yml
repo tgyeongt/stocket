@@ -47,17 +47,23 @@ jobs:
             source venv/bin/activate
             pip install -r requirements.txt --quiet
 
-            case "${{ steps.job.outputs.name }}" in
+            JOB="${{ steps.job.outputs.name }}"
+            LOG=~/logs/${JOB}.log
+            echo "=== $(date) 시작: $JOB ===" >> $LOG
+
+            case "$JOB" in
               seed)
-                python -m src.api.seed
+                nohup python -m src.api.seed >> $LOG 2>&1 &
                 ;;
               sync-companies)
-                python -m src.jobs.sync_companies_job
+                nohup python -m src.jobs.sync_companies_job >> $LOG 2>&1 &
                 ;;
               sync-stocks)
-                python -m src.jobs.sync_stocks_job
+                nohup python -m src.jobs.sync_stocks_job >> $LOG 2>&1 &
                 ;;
               sync-financials)
-                python -m src.jobs.sync_financials_job
+                nohup python -m src.jobs.sync_financials_job >> $LOG 2>&1 &
                 ;;
             esac
+
+            echo "✅ $JOB 백그라운드 시작됨 (PID: $!)"
