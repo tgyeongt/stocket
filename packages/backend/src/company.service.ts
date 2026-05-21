@@ -326,27 +326,42 @@ export class CompanyService {
         });
       }
 
-      // 4개 미만이면 Python 섹터 피어로 보완 (같은 섹터 우선)
-      if (peers.length < 4 && company.indutyCode) {
-        const prefix = company.indutyCode.slice(0, 2);
+      // 4개 미만이면 Python 섹터 피어로 보완 (indutyCode 없어도 시도)
+      if (peers.length < 4) {
         const excludeStockCodes = [
           company.stockCode ?? "",
           ...peers.map((p: any) => p.stockCode ?? ""),
         ].filter(Boolean).join(",");
 
-        const pyRes = await fetch(
-          `${DATA_SERVICE_URL}/company/sector-peers?prefix=${prefix}&excludes=${encodeURIComponent(excludeStockCodes)}&limit=${4 - peers.length}`,
-        ).catch(() => null);
+        if (company.indutyCode) {
+          const prefix = company.indutyCode.slice(0, 2);
+          const pyRes = await fetch(
+            `${DATA_SERVICE_URL}/company/sector-peers?prefix=${prefix}&excludes=${encodeURIComponent(excludeStockCodes)}&limit=${4 - peers.length}`,
+          ).catch(() => null);
 
-        if (pyRes?.ok) {
-          const pyBody = (await pyRes.json()) as { data: Array<{ name: string; score: number; correlation: number }> };
-          // Python 피어는 이미 {name, score, correlation} 형태이므로 직접 병합
-          const result = mapToFrontend(company, peers);
-          result.peers = [
-            ...result.peers,
-            ...(pyBody.data ?? []).slice(0, 4 - result.peers.length),
-          ];
-          return result;
+          if (pyRes?.ok) {
+            const pyBody = (await pyRes.json()) as { data: Array<{ name: string; score: number; correlation: number }> };
+            const result = mapToFrontend(company, peers);
+            result.peers = [
+              ...result.peers,
+              ...(pyBody.data ?? []).slice(0, 4 - result.peers.length),
+            ];
+            return result;
+          }
+        } else {
+          // indutyCode 없으면 Python 실시간 조회로 피어 획득
+          const pyRes = await fetch(
+            `${DATA_SERVICE_URL}/company?name=${encodeURIComponent(name)}`,
+          ).catch(() => null);
+
+          if (pyRes?.ok) {
+            const pyData = (await pyRes.json()) as CompanyFrontendResponse;
+            if (pyData.peers?.length) {
+              const result = mapToFrontend(company, peers);
+              result.peers = pyData.peers.slice(0, 4);
+              return result;
+            }
+          }
         }
       }
 

@@ -14,6 +14,7 @@ on:
         options:
           - seed
           - sync-companies
+          - sync-company-info
           - sync-stocks
           - sync-financials
       corp_codes:
@@ -61,6 +62,9 @@ jobs:
                 ;;
               sync-companies)
                 nohup python -m src.jobs.sync_companies_job >> $LOG 2>&1 &
+                ;;
+              sync-company-info)
+                nohup python -m src.jobs.sync_company_info_job >> $LOG 2>&1 &
                 ;;
               sync-stocks)
                 nohup python -m src.jobs.sync_stocks_job >> $LOG 2>&1 &
