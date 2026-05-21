@@ -1,5 +1,16 @@
-# dependencies
+# dependencies (node_modules는 Yarn PnP에서 사용하지 않음)
 node_modules
+
+# Yarn Berry
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.cjs
+.pnp.loader.mjs
 
 # environment variables
 .env

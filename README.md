@@ -51,7 +51,7 @@
 | 모노레포      | Turborepo         |
 | CI            | GitHub Actions    |
 | 네트워크 보안 | Cloudflare Tunnel |
-| 패키지 매니저 | npm Workspaces    |
+| 패키지 매니저 | Yarn Berry (PnP)  |
 
 ---
 
@@ -118,7 +118,7 @@ stocket/
 
 ```bash
 # 의존성 설치
-npm install
+yarn install
 
 # 환경변수 설정
 cp packages/backend/.env.example packages/backend/.env
@@ -134,11 +134,28 @@ docker run -d \
   postgres:15
 
 # DB 마이그레이션
-cd packages/backend && npx prisma migrate deploy
+yarn workspace backend db:migrate
 
 # 전체 빌드
-npx turbo build
+yarn build
+```
 
-# 백엔드 실행
-cd packages/backend && node dist/index.js
+### 개발 서버 실행
+
+```bash
+# frontend + backend 동시 실행
+yarn dev
+
+# 개별 실행
+yarn dev:frontend   # Next.js (frontend만)
+yarn dev:backend    # ts-node-dev (backend만)
+```
+
+### 기타 명령어
+
+```bash
+# Prisma
+yarn workspace backend db:generate   # 클라이언트 재생성
+yarn workspace backend db:studio     # Prisma Studio 실행
+yarn workspace backend db:migrate    # 마이그레이션 실행
 ```
