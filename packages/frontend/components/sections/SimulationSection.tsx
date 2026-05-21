@@ -66,7 +66,7 @@ export default function SimulationSection({ company }: SimulationSectionProps) {
   return (
     <Section step={2} label="미래 성장 시뮬레이션" className="">
       <div className="bg-[#1A1D27] border border-[rgba(255,255,255,0.07)] rounded-2xl p-6 mb-6">
-        <div className="flex justify-between items-start mb-6 pb-2">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-6 pb-2">
           <div>
             <h3 className="text-[17px] font-semibold">성장 시나리오 시뮬레이터</h3>
             <p className="text-[12px] text-[#94A3B8] mt-[3px]">슬라이더를 조정해 다양한 시장 상황의 성장 예측을 확인하세요</p>

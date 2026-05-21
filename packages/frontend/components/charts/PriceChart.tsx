@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   AreaChart,
   Area,
@@ -22,9 +23,19 @@ function formatLabel(dateStr: string): string {
 }
 
 export default function PriceChart({ prices, companyName }: PriceChartProps) {
-  const data = prices.map((p) => ({ month: formatLabel(p.date), price: p.price }));
+  const [isMobile, setIsMobile] = useState(false);
 
-  const maxPrice = Math.max(...prices.map((p) => p.price));
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const displayPrices = isMobile ? prices.slice(-10) : prices;
+  const data = displayPrices.map((p) => ({ month: formatLabel(p.date), price: p.price }));
+
+  const maxPrice = Math.max(...displayPrices.map((p) => p.price));
   const yAxisWidth = maxPrice.toLocaleString("ko-KR").length * 7 + 8;
 
   return (
