@@ -20,13 +20,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "npm"
+          cache: "yarn"
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
       - name: Lint (frontend)
-        run: npm run lint --workspace=frontend
+        run: yarn workspace frontend lint
 
       - name: Build (all packages)
-        run: npx turbo build
+        run: yarn build
