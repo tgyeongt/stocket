@@ -23,7 +23,7 @@ export default function PeerSection({ company }: PeerSectionProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3.5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
         {company.peers.map((peer) => (
           <div
             key={peer.name}

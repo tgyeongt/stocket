@@ -17,14 +17,14 @@ export default function ScoreSection({ company }: ScoreSectionProps) {
   return (
     <Section step={1} label="성장 가능성 점수">
       <div
-        className="rounded-[20px] p-8 flex items-center gap-10 border border-[rgba(34,197,94,0.25)] mb-[36px]"
+        className="rounded-[20px] p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6 sm:gap-10 border border-[rgba(34,197,94,0.25)] mb-[36px]"
         style={{
           background: "linear-gradient(135deg, #1A2A1A 0%, #1A1D27 60%)",
         }}
       >
         <GaugeChart score={company.score} />
 
-        <div className="flex-1">
+        <div className="w-full sm:flex-1">
           <h2 className="text-[26px] font-bold tracking-[-0.5px] mb-1">
             {company.name}
           </h2>

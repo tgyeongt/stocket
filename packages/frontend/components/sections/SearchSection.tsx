@@ -181,7 +181,7 @@ export default function SearchSection({
         <button
           onClick={() => { setOpen(false); onSearch(input.trim()); }}
           disabled={loading}
-          className="bg-[#22C55E] hover:bg-[#16A34A] disabled:opacity-60 text-white rounded-[10px] px-[28px] py-[14px] text-[15px] font-semibold cursor-pointer transition-colors whitespace-nowrap font-[inherit]"
+          className="bg-[#22C55E] hover:bg-[#16A34A] disabled:opacity-60 text-white rounded-[10px] px-[16px] sm:px-[28px] py-[14px] text-[14px] sm:text-[15px] font-semibold cursor-pointer transition-colors whitespace-nowrap font-[inherit]"
         >
           {loading ? "분석 중…" : "성장성 분석 →"}
         </button>
