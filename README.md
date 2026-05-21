@@ -114,31 +114,6 @@ stocket/
 - Python 3.11+
 - Docker
 
-### 설치 및 실행
-
-```bash
-# 의존성 설치
-yarn install
-
-# 환경변수 설정
-cp packages/backend/.env.example packages/backend/.env
-cp packages/data/.env.example packages/data/.env
-
-# DB 실행
-docker run -d \
-  --name stocket-db \
-  -e POSTGRES_USER=stocket \
-  -e POSTGRES_PASSWORD=stocket0916 \
-  -e POSTGRES_DB=stocket \
-  -p 5433:5432 \
-  postgres:15
-
-# DB 마이그레이션
-yarn workspace backend db:migrate
-
-# 전체 빌드
-yarn build
-```
 
 ### 개발 서버 실행
 
