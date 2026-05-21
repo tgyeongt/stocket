@@ -517,7 +517,22 @@ def get_company(name: str):
         }
         score = _overall(axes)
 
-        # 5. 응답 구성
+        # 5. 섹터 피어 조회
+        peers = []
+        if corp_info and corp_info.induty_code:
+            prefix = corp_info.induty_code[:2]
+            exclude_set = {stock_code or ""}
+            candidates = [c for c in SECTOR_COMPANIES.get(prefix, []) if c["stockCode"] not in exclude_set]
+            for c in candidates[:3]:
+                sc = c["stockCode"]
+                with _sector_peer_lock:
+                    cached = _sector_peer_cache.get(sc)
+                if cached:
+                    peers.append({**cached, "name": c["corpName"]})
+                else:
+                    peers.append({"name": c["corpName"], "score": 50, "correlation": 70})
+
+        # 6. 응답 구성
         growth_rate = fm.get("revenue_growth_rate") or 7.0
         momentum6m = pm.get("momentum6m") or 0.0
 
@@ -530,7 +545,7 @@ def get_company(name: str):
             "axes": axes,
             "why": _why_cards(fm, pm),
             "tags": _tags(fm, pm),
-            "peers": [],
+            "peers": peers,
             "simulation": {
                 "baseMarketRate": round(min(30, max(0, growth_rate))),
                 "baseTrend": round(100 + min(50, max(-20, momentum6m))),
