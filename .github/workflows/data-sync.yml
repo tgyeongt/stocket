@@ -16,6 +16,10 @@ on:
           - sync-companies
           - sync-stocks
           - sync-financials
+      corp_codes:
+        description: "재무제표 동기화 대상 기업 (공백 구분, 미입력 시 전체)"
+        required: false
+        type: string
 
 jobs:
   run:
@@ -62,7 +66,12 @@ jobs:
                 nohup python -m src.jobs.sync_stocks_job >> $LOG 2>&1 &
                 ;;
               sync-financials)
-                nohup python -m src.jobs.sync_financials_job >> $LOG 2>&1 &
+                CORP_CODES="${{ github.event.inputs.corp_codes }}"
+                if [ -n "$CORP_CODES" ]; then
+                  nohup python -m src.jobs.sync_financials_job --corp-codes $CORP_CODES >> $LOG 2>&1 &
+                else
+                  nohup python -m src.jobs.sync_financials_job >> $LOG 2>&1 &
+                fi
                 ;;
             esac
 
