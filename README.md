@@ -51,7 +51,7 @@
 | 모노레포      | Turborepo         |
 | CI            | GitHub Actions    |
 | 네트워크 보안 | Cloudflare Tunnel |
-| 패키지 매니저 | Yarn Berry (PnP)  |
+| 패키지 매니저 | Yarn Berry        |
 
 ---
 
