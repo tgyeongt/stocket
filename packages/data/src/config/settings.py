@@ -1,6 +1,9 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings
+
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
@@ -14,7 +17,7 @@ class Settings(BaseSettings):
     kis_app_secret: str
 
     class Config:
-        env_file = ".env"
+        env_file = str(ENV_FILE)
         case_sensitive = False
 
 
