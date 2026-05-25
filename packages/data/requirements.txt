@@ -1,8 +1,6 @@
 certifi
 charset-normalizer
 idna
-numpy
-pandas
 python-dateutil
 python-dotenv
 pytz
