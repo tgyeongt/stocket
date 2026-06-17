@@ -16,12 +16,16 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def run(corp_codes: list[str] | None = None) -> None:
+def run(corp_codes: list[str] | None = None, hot_only: bool = True) -> None:
     dart_client = DartClient()
     try:
         with get_session() as session:
             if not corp_codes:
-                corp_codes = CompanyRepository(session).find_all_corp_codes(listed_only=True)
+                repo = CompanyRepository(session)
+                if hot_only:
+                    corp_codes = repo.find_hot_corp_codes()
+                if not corp_codes:
+                    corp_codes = repo.find_all_corp_codes(listed_only=True)
 
             logger.info(f"=== 재무제표 동기화 시작: {len(corp_codes)}개 기업 ===")
             service = FinancialSyncService(session, dart_client)
