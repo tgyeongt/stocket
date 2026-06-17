@@ -22,7 +22,7 @@ jobs:
             git pull origin main
 
             # Backend: 의존성 + 빌드 + DB 마이그레이션
-            yarn install --immutable
+            yarn install
             yarn workspace backend build
             npx prisma migrate deploy --schema=packages/backend/prisma/schema.prisma
 
