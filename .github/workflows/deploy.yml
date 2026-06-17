@@ -17,6 +17,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+            ulimit -n 65536
 
             cd ~/stocket
             git pull origin main
@@ -24,7 +25,9 @@ jobs:
             # Backend: 의존성 + 빌드 + DB 마이그레이션
             yarn install
             yarn workspace backend build
-            npx prisma migrate deploy --schema=packages/backend/prisma/schema.prisma
+            cd packages/backend
+            ./node_modules/.bin/prisma migrate deploy
+            cd ~/stocket
 
             # Data: Python 의존성
             cd packages/data
