@@ -37,6 +37,7 @@ jobs:
             deactivate
             cd ~/stocket
 
-            # 서비스 재시작
-            pm2 restart stocket-backend
-            pm2 restart stocket-data
+            # 서비스 재시작 (없으면 새로 시작)
+            pm2 restart stocket-backend || pm2 start "yarn workspace backend start" --name stocket-backend --cwd ~/stocket
+            pm2 restart stocket-data || pm2 start "venv/bin/uvicorn src.api.server:app --host 0.0.0.0 --port 8000" --name stocket-data --cwd ~/stocket/packages/data
+            pm2 save
