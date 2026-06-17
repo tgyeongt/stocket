@@ -18,3 +18,4 @@ apscheduler
 schedule
 redis
 uvicorn
+fastapi
