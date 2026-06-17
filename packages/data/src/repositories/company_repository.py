@@ -2,8 +2,9 @@ from __future__ import annotations
 
 # src/repositories/company_repository.py
 import uuid
+from datetime import datetime, timedelta
 
-from sqlalchemy import text
+from sqlalchemy import or_, text
 from sqlalchemy.orm import Session
 
 from src.database.models import Company
@@ -72,3 +73,31 @@ class CompanyRepository:
 
     def update_company_info(self, corp_code: str, data: dict) -> None:
         self._s.query(Company).filter_by(corpCode=corp_code).update(data)
+
+    def mark_accessed(self, corp_code: str) -> None:
+        self._s.query(Company).filter_by(corpCode=corp_code).update(
+            {"lastAccessedAt": datetime.utcnow()}
+        )
+        self._s.commit()
+
+    def find_hot_corp_codes(self, days: int = 30) -> list[str]:
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        rows = (
+            self._s.query(Company.corpCode)
+            .filter(Company.stockCode.isnot(None))
+            .filter(Company.lastAccessedAt >= cutoff)
+            .all()
+        )
+        return [r[0] for r in rows]
+
+    def find_cold_company_ids(self, days: int = 30) -> list[str]:
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        rows = (
+            self._s.query(Company.id)
+            .filter(Company.stockCode.isnot(None))
+            .filter(
+                or_(Company.lastAccessedAt < cutoff, Company.lastAccessedAt.is_(None))
+            )
+            .all()
+        )
+        return [r[0] for r in rows]

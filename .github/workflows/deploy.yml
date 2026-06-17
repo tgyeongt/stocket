@@ -1,0 +1,39 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            cd ~/stocket
+            git pull origin main
+
+            # Backend: 의존성 + 빌드 + DB 마이그레이션
+            yarn install --immutable
+            yarn workspace backend build
+            npx prisma migrate deploy --schema=packages/backend/prisma/schema.prisma
+
+            # Data: Python 의존성
+            cd packages/data
+            python3 -m venv venv
+            source venv/bin/activate
+            pip install -r requirements.txt --quiet
+            deactivate
+            cd ~/stocket
+
+            # 서비스 재시작
+            pm2 restart stocket-backend
+            pm2 restart stocket-data

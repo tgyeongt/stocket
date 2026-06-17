@@ -16,3 +16,4 @@ loguru
 xmltodict
 apscheduler
 schedule
+redis
