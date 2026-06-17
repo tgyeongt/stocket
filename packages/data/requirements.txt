@@ -17,3 +17,4 @@ xmltodict
 apscheduler
 schedule
 redis
+uvicorn
