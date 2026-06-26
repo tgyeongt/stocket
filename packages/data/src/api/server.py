@@ -228,13 +228,11 @@ def _overall(axes: dict) -> int:
 def _grade(score: int) -> str:
     if score >= 85:
         return "성장 잠재력 매우 높음"
-    if score >= 75:
+    if score >= 70:
         return "성장 잠재력 높음"
-    if score >= 60:
+    if score >= 50:
         return "성장 잠재력 보통"
-    if score >= 45:
-        return "성장 잠재력 낮음"
-    return "성장 잠재력 매우 낮음"
+    return "성장 잠재력 낮음"
 
 
 # ── 재무 지표 파싱 ─────────────────────────────────────────────

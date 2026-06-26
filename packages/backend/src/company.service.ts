@@ -98,10 +98,9 @@ function calcOverallScore(axes: CompanyFrontendResponse["axes"]): number {
 
 function toGrade(score: number): string {
   if (score >= 85) return "성장 잠재력 매우 높음";
-  if (score >= 75) return "성장 잠재력 높음";
-  if (score >= 60) return "성장 잠재력 보통";
-  if (score >= 45) return "성장 잠재력 낮음";
-  return "성장 잠재력 매우 낮음";
+  if (score >= 70) return "성장 잠재력 높음";
+  if (score >= 50) return "성장 잠재력 보통";
+  return "성장 잠재력 낮음";
 }
 
 // ── Why 카드 생성 ─────────────────────────────────────────────
