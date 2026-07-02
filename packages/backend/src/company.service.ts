@@ -226,12 +226,39 @@ function extractPriceHistory(recentPrices: any[]): { date: string; price: number
     }));
 }
 
-// ── Peer 유사도 추정 ──────────────────────────────────────────
+// ── 성장 패턴 유사도 (같은 업종 후보 중 성장·모멘텀 축이 가까울수록 높은 점수) ──
+// 업종코드로 이미 같은 카테고리인 후보만 들어온다는 전제 하에,
+// 그 안에서 버블 차트 중심에 가깝게(크게) 표시할 기준으로 사용됨.
 
-function estimateCorrelation(baseIndutyCode: string | null, peerIndutyCode: string | null): number {
-  if (!baseIndutyCode || !peerIndutyCode) return 70;
-  const samePrefix = baseIndutyCode.slice(0, 2) === peerIndutyCode.slice(0, 2);
-  return samePrefix ? 85 : 68;
+function computeAxes(entity: any): CompanyFrontendResponse["axes"] {
+  const f = entity?.financials?.[0] ?? null;
+  const m = entity?.stockMetrics?.[0] ?? null;
+  return {
+    growth: calcGrowth(f?.revenueGrowthRate ?? null),
+    stability: calcStability(f?.debtRatio ?? null),
+    profitability: calcProfitability(f?.roe ?? null, f?.operatingMargin ?? null),
+    momentum: calcMomentum(m?.momentum1m ?? null, m?.momentum3m ?? null, m?.momentum6m ?? null),
+  };
+}
+
+function axesDistanceScore(
+  a: { growth: number; momentum: number },
+  b: { growth: number; momentum: number },
+): number {
+  const dist = Math.sqrt((a.growth - b.growth) ** 2 + (a.momentum - b.momentum) ** 2);
+  const maxDist = Math.sqrt(2) * 100;
+  return Math.round(Math.max(50, 98 - (dist / maxDist) * 48));
+}
+
+function growthPatternSimilarity(baseEntity: any, peerEntity: any): number {
+  return axesDistanceScore(computeAxes(baseEntity), computeAxes(peerEntity));
+}
+
+// 성장 패턴 유사도순으로 정렬 후 상위 limit개만 선택
+function pickClosestByGrowthPattern<T>(baseEntity: any, candidates: T[], limit: number): T[] {
+  return [...candidates]
+    .sort((a, b) => growthPatternSimilarity(baseEntity, b) - growthPatternSimilarity(baseEntity, a))
+    .slice(0, limit);
 }
 
 // ── Prisma 모델 → CompanyFrontendResponse 변환 ────────────────
@@ -241,33 +268,16 @@ function mapToFrontend(company: any, peers: any[]): CompanyFrontendResponse {
   const m = company.stockMetrics?.[0] ?? null;
   const prices = company.stockPrices ?? [];
 
-  const axes = {
-    growth: calcGrowth(f?.revenueGrowthRate ?? null),
-    stability: calcStability(f?.debtRatio ?? null),
-    profitability: calcProfitability(f?.roe ?? null, f?.operatingMargin ?? null),
-    momentum: calcMomentum(
-      m?.momentum1m ?? null,
-      m?.momentum3m ?? null,
-      m?.momentum6m ?? null,
-    ),
-  };
+  const axes = computeAxes(company);
   const score = calcOverallScore(axes);
 
-  const peerList = peers.map((p) => {
-    const pf = p.financials?.[0] ?? null;
-    const pm = p.stockMetrics?.[0] ?? null;
-    const pAxes = {
-      growth: calcGrowth(pf?.revenueGrowthRate ?? null),
-      stability: calcStability(pf?.debtRatio ?? null),
-      profitability: calcProfitability(pf?.roe ?? null, pf?.operatingMargin ?? null),
-      momentum: calcMomentum(pm?.momentum1m ?? null, pm?.momentum3m ?? null, pm?.momentum6m ?? null),
-    };
-    return {
+  const peerList = peers
+    .map((p) => ({
       name: p.corpName as string,
-      correlation: estimateCorrelation(company.indutyCode, p.indutyCode),
-      score: calcOverallScore(pAxes),
-    };
-  });
+      correlation: growthPatternSimilarity(company, p),
+      score: calcOverallScore(computeAxes(p)),
+    }))
+    .sort((a, b) => b.correlation - a.correlation);
 
   const growthRate = f?.revenueGrowthRate ?? 7;
   const momentum6m = m?.momentum6m ?? 0;
@@ -318,11 +328,12 @@ export class CompanyService {
     if (company && (company.financials?.length ?? 0) > 0) {
       let peers: any[] = [];
       if (company.indutyCode) {
-        peers = await this.companyRepository.findSimilar({
+        const candidates = await this.companyRepository.findSimilar({
           corpCode: company.corpCode,
           indutyCode: company.indutyCode,
           limit: 4,
         });
+        peers = pickClosestByGrowthPattern(company, candidates, 4);
       }
 
       // 4개 미만이면 Python 섹터 피어로 보완 (indutyCode 없어도 시도)
@@ -375,27 +386,22 @@ export class CompanyService {
     if (res?.ok) {
       const pyData = (await res.json()) as CompanyFrontendResponse;
 
-      // peers가 부족하면 주요 기업 중에서 보완
+      // peers가 부족하면 주요 기업 중 같은 업종(카테고리)인 곳만 보완
       if (pyData.peers.length < 2) {
         const needed = 2 - pyData.peers.length;
-        const fallbackCodes = MAIN_CORP_CODES.slice(0, needed + 1); // 여유분 포함
-        const extras = await this.companyRepository.findManyDetailByCorpCodes(fallbackCodes);
-        const extraPeers = extras.slice(0, needed).map((p: any) => {
-          const pf = p.financials?.[0] ?? null;
-          const pm = p.stockMetrics?.[0] ?? null;
-          const pAxes = {
-            growth: calcGrowth(pf?.revenueGrowthRate ?? null),
-            stability: calcStability(pf?.debtRatio ?? null),
-            profitability: calcProfitability(pf?.roe ?? null, pf?.operatingMargin ?? null),
-            momentum: calcMomentum(pm?.momentum1m ?? null, pm?.momentum3m ?? null, pm?.momentum6m ?? null),
-          };
+        const candidates = await this.companyRepository.findManyDetailByCorpCodes(MAIN_CORP_CODES);
+        const sameCategory = candidates.filter(
+          (p: any) => resolveIndustryName(p.indutyCode, p.indutyName, p.sector) === pyData.sector,
+        );
+        const extraPeers = sameCategory.slice(0, needed).map((p: any) => {
+          const pAxes = computeAxes(p);
           return {
             name: p.corpName as string,
-            correlation: 68,
+            correlation: axesDistanceScore(pyData.axes, pAxes),
             score: calcOverallScore(pAxes),
           };
         });
-        pyData.peers = [...pyData.peers, ...extraPeers];
+        pyData.peers = [...pyData.peers, ...extraPeers].sort((a, b) => b.correlation - a.correlation);
       }
 
       return pyData;
@@ -484,11 +490,12 @@ export class CompanyService {
       return [];
     }
 
-    const similar = await this.companyRepository.findSimilar({
+    const candidates = await this.companyRepository.findSimilar({
       corpCode: params.corpCode,
       indutyCode: base.indutyCode,
       limit: params.limit,
     });
+    const similar = pickClosestByGrowthPattern(base, candidates, params.limit);
 
     return similar.map((c) => ({
       id: c.id,
