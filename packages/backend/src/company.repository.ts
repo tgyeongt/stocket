@@ -25,6 +25,16 @@ export class CompanyRepository {
       where: {
         corpCode,
       },
+      include: {
+        financials: {
+          orderBy: [{ year: "desc" }, { quarter: "desc" }],
+          take: 1,
+        },
+        stockMetrics: {
+          orderBy: { calcDate: "desc" },
+          take: 1,
+        },
+      },
     });
   }
 
@@ -177,6 +187,8 @@ export class CompanyRepository {
 
   // ── 유사 기업 조회 ───────────────────────────────────────────
 
+  // params.limit개만 필요하지만, 서비스 레이어에서 성장 패턴 유사도순으로
+  // 정렬하기 위해 넉넉히(최대 30개) 후보를 가져온다.
   findSimilar(params: { corpCode: string; indutyCode: string; limit: number }) {
     const prefix = params.indutyCode.slice(0, 2);
 
@@ -208,7 +220,7 @@ export class CompanyRepository {
           take: 1,
         },
       },
-      take: params.limit,
+      take: Math.min(params.limit * 3, 30),
     });
   }
 
