@@ -306,15 +306,6 @@ function mapToFrontend(company: any, peers: any[]): CompanyFrontendResponse {
 
 const DATA_SERVICE_URL = process.env.DATA_SERVICE_URL ?? "http://localhost:8000";
 
-// 주요 5개 기업 corp_code (피어 보완용)
-const MAIN_CORP_CODES = [
-  "00126380", // 삼성전자
-  "00164779", // SK하이닉스
-  "00266961", // NAVER
-  "00258801", // 카카오
-  "01515323", // LG에너지솔루션
-];
-
 // ── Service ───────────────────────────────────────────────────
 
 export class CompanyService {
@@ -326,52 +317,48 @@ export class CompanyService {
     // 1. DB에서 먼저 검색 (주요 기업은 DB에 사전 저장)
     const company = await this.companyRepository.findDetailByName(name);
     if (company && (company.financials?.length ?? 0) > 0) {
+      const sector = resolveIndustryName(company.indutyCode, company.indutyName, company.sector);
+      const hasKnownIndustry = Boolean(company.indutyCode) && sector !== "기타";
+
       let peers: any[] = [];
-      if (company.indutyCode) {
+      if (hasKnownIndustry) {
         const candidates = await this.companyRepository.findSimilar({
           corpCode: company.corpCode,
-          indutyCode: company.indutyCode,
+          indutyCode: company.indutyCode as string,
+          limit: 4,
+        });
+        peers = pickClosestByGrowthPattern(company, candidates, 4);
+      } else {
+        // "기타"(또는 업종코드 미확보)는 업종 매칭 자체가 의미 없으므로
+        // 업종 제한 없이 전체 후보 중 성장 패턴이 가장 비슷한 회사로 매칭한다.
+        const candidates = await this.companyRepository.findGrowthPatternCandidates({
+          excludeCorpCode: company.corpCode,
+          excludeStockCode: company.stockCode,
           limit: 4,
         });
         peers = pickClosestByGrowthPattern(company, candidates, 4);
       }
 
-      // 4개 미만이면 Python 섹터 피어로 보완 (indutyCode 없어도 시도)
-      if (peers.length < 4) {
+      // 같은 업종이 명확한데도 4개 미만이면 Python 섹터 피어로 보완
+      if (peers.length < 4 && hasKnownIndustry) {
+        const prefix = (company.indutyCode as string).slice(0, 2);
         const excludeStockCodes = [
           company.stockCode ?? "",
           ...peers.map((p: any) => p.stockCode ?? ""),
         ].filter(Boolean).join(",");
 
-        if (company.indutyCode) {
-          const prefix = company.indutyCode.slice(0, 2);
-          const pyRes = await fetch(
-            `${DATA_SERVICE_URL}/company/sector-peers?prefix=${prefix}&excludes=${encodeURIComponent(excludeStockCodes)}&limit=${4 - peers.length}`,
-          ).catch(() => null);
+        const pyRes = await fetch(
+          `${DATA_SERVICE_URL}/company/sector-peers?prefix=${prefix}&excludes=${encodeURIComponent(excludeStockCodes)}&limit=${4 - peers.length}`,
+        ).catch(() => null);
 
-          if (pyRes?.ok) {
-            const pyBody = (await pyRes.json()) as { data: Array<{ name: string; score: number; correlation: number }> };
-            const result = mapToFrontend(company, peers);
-            result.peers = [
-              ...result.peers,
-              ...(pyBody.data ?? []).slice(0, 4 - result.peers.length),
-            ];
-            return result;
-          }
-        } else {
-          // indutyCode 없으면 Python 실시간 조회로 피어 획득
-          const pyRes = await fetch(
-            `${DATA_SERVICE_URL}/company?name=${encodeURIComponent(name)}`,
-          ).catch(() => null);
-
-          if (pyRes?.ok) {
-            const pyData = (await pyRes.json()) as CompanyFrontendResponse;
-            if (pyData.peers?.length) {
-              const result = mapToFrontend(company, peers);
-              result.peers = pyData.peers.slice(0, 4);
-              return result;
-            }
-          }
+        if (pyRes?.ok) {
+          const pyBody = (await pyRes.json()) as { data: Array<{ name: string; score: number; correlation: number }> };
+          const result = mapToFrontend(company, peers);
+          result.peers = [
+            ...result.peers,
+            ...(pyBody.data ?? []).slice(0, 4 - result.peers.length),
+          ];
+          return result;
         }
       }
 
@@ -386,22 +373,35 @@ export class CompanyService {
     if (res?.ok) {
       const pyData = (await res.json()) as CompanyFrontendResponse;
 
-      // peers가 부족하면 주요 기업 중 같은 업종(카테고리)인 곳만 보완
-      if (pyData.peers.length < 2) {
-        const needed = 2 - pyData.peers.length;
-        const candidates = await this.companyRepository.findManyDetailByCorpCodes(MAIN_CORP_CODES);
-        const sameCategory = candidates.filter(
-          (p: any) => resolveIndustryName(p.indutyCode, p.indutyName, p.sector) === pyData.sector,
-        );
-        const extraPeers = sameCategory.slice(0, needed).map((p: any) => {
-          const pAxes = computeAxes(p);
-          return {
-            name: p.corpName as string,
-            correlation: axesDistanceScore(pyData.axes, pAxes),
-            score: calcOverallScore(pAxes),
-          };
-        });
-        pyData.peers = [...pyData.peers, ...extraPeers].sort((a, b) => b.correlation - a.correlation);
+      // peers가 부족하면 DB에서 보완
+      // - 업종이 명확하면(indutyCode 있고 "기타"가 아니면) 같은 업종코드(prefix)로 검색
+      // - "기타"(또는 업종코드 미확보)면 업종 제한 없이 성장 패턴 유사도로 검색
+      //   (5개 주요 기업으로 제한하지 않음 — 30%+ 기업이 "기타"라 흔한 케이스임)
+      if (pyData.peers.length < 4) {
+        const needed = 4 - pyData.peers.length;
+        const candidates =
+          pyData.indutyCode && pyData.sector !== "기타"
+            ? await this.companyRepository.findByIndustryPrefix({
+                excludeStockCode: pyData.code || null,
+                indutyCode: pyData.indutyCode,
+                limit: needed,
+              })
+            : await this.companyRepository.findGrowthPatternCandidates({
+                excludeStockCode: pyData.code || null,
+                limit: needed,
+              });
+        const extraPeers = candidates
+          .map((p: any) => {
+            const pAxes = computeAxes(p);
+            return {
+              name: p.corpName as string,
+              correlation: axesDistanceScore(pyData.axes, pAxes),
+              score: calcOverallScore(pAxes),
+            };
+          })
+          .sort((a, b) => b.correlation - a.correlation)
+          .slice(0, needed);
+        pyData.peers = [...pyData.peers, ...extraPeers];
       }
 
       return pyData;

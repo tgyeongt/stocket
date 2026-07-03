@@ -7,6 +7,21 @@ interface PeerSectionProps {
 }
 
 export default function PeerSection({ company }: PeerSectionProps) {
+  if (company.peers.length === 0) {
+    return (
+      <Section step={4} label="유사 기업 비교 — 같은 업종 · 비슷한 성장 패턴">
+        <div className="bg-[#1A1D27] border border-[rgba(255,255,255,0.07)] rounded-2xl p-6 mb-6 text-center">
+          <p className="text-[14px] font-semibold mb-1.5">
+            아직 비교할 유사 기업이 없어요
+          </p>
+          <p className="text-[13px] text-[#94A3B8]">
+            같은 업종으로 등록된 다른 기업 데이터가 아직 충분하지 않아요. 데이터가 쌓이면 표시될 예정이에요.
+          </p>
+        </div>
+      </Section>
+    );
+  }
+
   return (
     <Section step={4} label="유사 기업 비교 — 같은 업종 · 비슷한 성장 패턴">
 
