@@ -224,6 +224,78 @@ export class CompanyRepository {
     });
   }
 
+  // DB에 아직 없는 기업(Python 실시간 조회 결과)의 피어 보완용.
+  // corpCode가 없으므로 stockCode로 자기 자신을 제외한다.
+  findByIndustryPrefix(params: { excludeStockCode: string | null; indutyCode: string; limit: number }) {
+    const prefix = params.indutyCode.slice(0, 2);
+
+    return this.prisma.company.findMany({
+      where: {
+        indutyCode: {
+          startsWith: prefix,
+        },
+        stockCode: {
+          not: null,
+        },
+        ...(params.excludeStockCode
+          ? { NOT: { stockCode: params.excludeStockCode } }
+          : {}),
+      },
+      include: {
+        stockMetrics: {
+          orderBy: {
+            calcDate: "desc",
+          },
+          take: 1,
+        },
+        financials: {
+          orderBy: [
+            {
+              year: "desc",
+            },
+          ],
+          take: 1,
+        },
+      },
+      take: Math.min(params.limit * 3, 30),
+    });
+  }
+
+  // "기타"(업종코드 미분류)처럼 업종코드 매칭이 의미 없는 경우,
+  // 업종 제한 없이 넓은 후보 풀을 가져와 서비스 레이어에서 성장 패턴 유사도로 정렬한다.
+  findGrowthPatternCandidates(params: {
+    excludeCorpCode?: string;
+    excludeStockCode?: string | null;
+    limit: number;
+  }) {
+    return this.prisma.company.findMany({
+      where: {
+        stockCode: {
+          not: null,
+        },
+        ...(params.excludeCorpCode ? { corpCode: { not: params.excludeCorpCode } } : {}),
+        ...(params.excludeStockCode ? { NOT: { stockCode: params.excludeStockCode } } : {}),
+      },
+      include: {
+        stockMetrics: {
+          orderBy: {
+            calcDate: "desc",
+          },
+          take: 1,
+        },
+        financials: {
+          orderBy: [
+            {
+              year: "desc",
+            },
+          ],
+          take: 1,
+        },
+      },
+      take: Math.max(params.limit * 15, 60),
+    });
+  }
+
   // ── 섹터 평균 지표 조회 ──────────────────────────────────────
 
   async getSectorAverage(sector: string): Promise<SectorAverageResult | null> {

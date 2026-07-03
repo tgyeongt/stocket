@@ -184,6 +184,7 @@ async def get_company(name: str, background_tasks: BackgroundTasks):
     result = {
         "name": corp_name,
         "sector": induty_name or "기타",
+        "indutyCode": corp_info.induty_code if corp_info else None,
         "code": stock_code or "",
         "score": score,
         "grade": _grade(score),
