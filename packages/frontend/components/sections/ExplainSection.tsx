@@ -1,10 +1,16 @@
-import type { CompanyData } from "@/types";
+import type { CompanyData, WhySegment } from "@/types";
 import Section from "@/components/sections/Section";
 import FinTag from "@/components/ui/FinTag";
 
 interface ExplainSectionProps {
   company: CompanyData;
 }
+
+const TONE_CLASS: Record<NonNullable<WhySegment["tone"]>, string> = {
+  positive: "text-green-400",
+  warning: "text-yellow-400",
+  negative: "text-red-400",
+};
 
 export default function ExplainSection({ company }: ExplainSectionProps) {
   return (
@@ -22,10 +28,17 @@ export default function ExplainSection({ company }: ExplainSectionProps) {
               <strong className="block text-[13px] font-semibold mb-1">
                 {card.title}
               </strong>
-              <span
-                className="text-[12px] text-[#94A3B8] leading-[1.5]"
-                dangerouslySetInnerHTML={{ __html: card.body }}
-              />
+              <span className="text-[12px] text-[#94A3B8] leading-[1.5]">
+                {card.segments.map((segment, j) =>
+                  segment.tone ? (
+                    <strong key={j} className={TONE_CLASS[segment.tone]}>
+                      {segment.text}
+                    </strong>
+                  ) : (
+                    <span key={j}>{segment.text}</span>
+                  ),
+                )}
+              </span>
             </div>
           </div>
         ))}
