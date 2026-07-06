@@ -11,6 +11,7 @@ from src.clients.kis_client import KisClient
 from src.database.connection import get_session
 from src.repositories.company_repository import CompanyRepository
 from src.services.metrics_service import MetricsService
+from src.services.scoring_service import ScoringService
 from src.services.stock_sync_service import StockSyncService
 from src.utils.logger import get_logger
 
@@ -39,6 +40,11 @@ def run(corp_codes: list[str] | None = None, days: int = 120) -> None:
             metrics_service = MetricsService(session)
             metrics_result = metrics_service.calc_many(corp_codes)
             logger.info(f"지표 계산 완료: {metrics_result}")
+
+            # 3단계: 성장성 점수 재계산
+            logger.info("=== 성장성 점수 재계산 시작 ===")
+            score_result = ScoringService(session).recalculate(corp_codes)
+            logger.info(f"점수 재계산 완료: {score_result}")
     finally:
         kis_client.close()
 

@@ -11,6 +11,7 @@ from src.clients.dart_client import DartClient
 from src.database.connection import get_session
 from src.repositories.company_repository import CompanyRepository
 from src.services.financial_sync_service import FinancialSyncService
+from src.services.scoring_service import ScoringService
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -29,6 +30,10 @@ def run(corp_codes: list[str] | None = None) -> None:
 
             synced_total = sum(r["synced"] for r in results)
             logger.info(f"재무제표 동기화 완료: {synced_total}건")
+
+            logger.info("=== 성장성 점수 재계산 시작 ===")
+            score_result = ScoringService(session).recalculate(corp_codes)
+            logger.info(f"점수 재계산 완료: {score_result}")
     finally:
         dart_client.close()
 

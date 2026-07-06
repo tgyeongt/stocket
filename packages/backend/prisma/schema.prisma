@@ -27,6 +27,7 @@ model Company {
   financials      FinancialStatement[]
   stockPrices     StockPrice[]
   stockMetrics    StockMetrics[]
+  score           CompanyScore?
 
   @@index([indutyCode])
   @@index([sector])
@@ -126,6 +127,26 @@ model StockMetrics {
   @@unique([companyId, calcDate])
   @@index([companyId, calcDate(sort: Desc)])
   @@map("stock_metrics")
+}
+
+// ─────────────────────────────────────────────
+// 성장성 점수 (배치 잡이 계산한 최종 점수, 회사당 1행)
+// ─────────────────────────────────────────────
+model CompanyScore {
+  id            String   @id @default(cuid())
+  companyId     String   @unique
+  company       Company  @relation(fields: [companyId], references: [id])
+
+  growth        Int                // 성장성 (0-100)
+  stability     Int                // 안정성 (0-100)
+  profitability Int                // 수익성 (0-100)
+  momentum      Int                // 모멘텀 (0-100)
+  overall       Int                // 종합 점수 (0-100)
+  grade         String             // 등급 문자열
+
+  calculatedAt  DateTime @updatedAt
+
+  @@map("company_scores")
 }
 
 // ─────────────────────────────────────────────

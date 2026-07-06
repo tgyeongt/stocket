@@ -1,0 +1,20 @@
+{
+  "entryFile": "src/index.ts",
+  "noImplicitAdditionalProperties": "throw-on-extras",
+  "controllerPathGlobs": ["src/*.controller.ts"],
+  "spec": {
+    "outputDirectory": "build",
+    "specVersion": 3,
+    "name": "Stocket API",
+    "description": "국내 주식 성장성 분석 서비스 API. 재무비율/주가지표/성장성 점수는 packages/data 배치 잡이 미리 계산해 Postgres에 저장하며, 이 서버는 저장된 값을 Prisma로 읽어 응답만 한다.",
+    "version": "1.0.0",
+    "servers": [
+      { "url": "https://api.stocket.site", "description": "Production" },
+      { "url": "http://localhost:3001", "description": "Local" }
+    ]
+  },
+  "routes": {
+    "routesDir": "src/generated",
+    "iocModule": "src/ioc"
+  }
+}

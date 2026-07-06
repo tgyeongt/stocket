@@ -57,6 +57,7 @@ export class CompanyRepository {
           orderBy: { date: "desc" },
           take: 90,
         },
+        score: true,
       },
     });
   }
@@ -85,6 +86,7 @@ export class CompanyRepository {
           },
           take: 90,
         },
+        score: true,
       },
     });
   }
@@ -115,6 +117,7 @@ export class CompanyRepository {
           },
           take: 90,
         },
+        score: true,
       },
     });
   }
@@ -207,6 +210,7 @@ export class CompanyRepository {
           ],
           take: 1,
         },
+        score: true,
       },
       take: params.limit,
     });

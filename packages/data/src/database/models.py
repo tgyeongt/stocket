@@ -28,6 +28,7 @@ class Company(Base):
     financials = relationship("FinancialStatement", back_populates="company", lazy="dynamic")
     stock_prices = relationship("StockPrice", back_populates="company", lazy="dynamic")
     stock_metrics = relationship("StockMetrics", back_populates="company", lazy="dynamic")
+    score = relationship("CompanyScore", back_populates="company", uselist=False)
 
 
 class FinancialStatement(Base):
@@ -108,3 +109,21 @@ class StockMetrics(Base):
     updatedAt = Column("updatedAt", DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     company = relationship("Company", back_populates="stock_metrics")
+
+
+class CompanyScore(Base):
+    __tablename__ = "company_scores"
+
+    id = Column(String, primary_key=True)
+    companyId = Column("companyId", String, ForeignKey("companies.id"), unique=True, nullable=False)
+
+    growth = Column("growth", Integer, nullable=False)
+    stability = Column("stability", Integer, nullable=False)
+    profitability = Column("profitability", Integer, nullable=False)
+    momentum = Column("momentum", Integer, nullable=False)
+    overall = Column("overall", Integer, nullable=False)
+    grade = Column("grade", String, nullable=False)
+
+    calculatedAt = Column("calculatedAt", DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    company = relationship("Company", back_populates="score")

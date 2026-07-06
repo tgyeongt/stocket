@@ -12,6 +12,9 @@ node_modules
 dist/
 build/
 
+# tsoa codegen (regenerated via `npm run tsoa` from company.controller.ts)
+packages/backend/src/generated/
+
 # typescript
 *.tsbuildinfo
 
