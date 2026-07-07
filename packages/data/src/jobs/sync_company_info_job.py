@@ -3,7 +3,7 @@ from __future__ import annotations
 # src/jobs/sync_company_info_job.py
 #
 # 실행: python -m src.jobs.sync_company_info_job
-# 용도: indutyCode 없는 기업에 DART 상세정보 보완 (1회 200개씩)
+# 용도: indutyCode 없는 기업에 DART 상세정보 보완 (1회 1000개씩, 매일 자동 실행)
 #
 
 import time
@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
-def run(limit: int = 200) -> None:
+def run(limit: int = 1000) -> None:
     dart = DartClient()
     try:
         with get_session() as session:
@@ -57,6 +57,6 @@ def _corp_cls_to_market(corp_cls: str) -> str | None:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=200)
+    parser.add_argument("--limit", type=int, default=1000)
     args = parser.parse_args()
     run(limit=args.limit)

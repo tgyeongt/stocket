@@ -1,6 +1,17 @@
 # dependencies
 node_modules
 
+# Yarn Berry
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.cjs
+.pnp.loader.mjs
+
 # environment variables
 .env
 .env.*
@@ -12,7 +23,7 @@ node_modules
 dist/
 build/
 
-# tsoa codegen (regenerated via `npm run tsoa` from company.controller.ts)
+# tsoa codegen (regenerated via `yarn tsoa` from company.controller.ts)
 packages/backend/src/generated/
 
 # typescript

@@ -20,8 +20,9 @@ model Company {
   sector      String?           // 대분류 섹터
   market      String?           // 코스피/코스닥/코넥스
   ceoName     String?           // 대표자명
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastAccessedAt DateTime?
 
   // Relations
   financials      FinancialStatement[]

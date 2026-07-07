@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   AreaChart,
   Area,
@@ -22,7 +23,20 @@ function formatLabel(dateStr: string): string {
 }
 
 export default function PriceChart({ prices, companyName }: PriceChartProps) {
-  const data = prices.map((p) => ({ month: formatLabel(p.date), price: p.price }));
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const displayPrices = isMobile ? prices.slice(-10) : prices;
+  const data = displayPrices.map((p) => ({ month: formatLabel(p.date), price: p.price }));
+
+  const maxPrice = Math.max(...displayPrices.map((p) => p.price));
+  const yAxisWidth = maxPrice.toLocaleString("ko-KR").length * 7 + 8;
 
   return (
     <div
@@ -33,7 +47,7 @@ export default function PriceChart({ prices, companyName }: PriceChartProps) {
       <ResponsiveContainer width="100%" height={200}>
         <AreaChart
           data={data}
-          margin={{ top: 20, right: 25, left: -25, bottom: 0 }}
+          margin={{ top: 20, right: 25, left: 0, bottom: 0 }}
         >
           <defs>
             <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
@@ -53,6 +67,8 @@ export default function PriceChart({ prices, companyName }: PriceChartProps) {
             tick={{ fill: "#94A3B8", fontSize: 10 }}
             axisLine={false}
             tickLine={false}
+            width={yAxisWidth}
+            tickFormatter={(v: number) => v.toLocaleString("ko-KR")}
           />
           <Tooltip
             contentStyle={{
@@ -63,6 +79,11 @@ export default function PriceChart({ prices, companyName }: PriceChartProps) {
               fontSize: 12,
             }}
             labelStyle={{ color: "#94A3B8" }}
+            formatter={(value) => [
+              typeof value === "number"
+                ? `${value.toLocaleString("ko-KR")}원`
+                : String(value),
+            ]}
           />
           <Area
             type="monotone"

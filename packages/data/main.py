@@ -7,7 +7,11 @@
 import schedule
 import time
 
-from src.jobs import sync_companies_job, sync_financials_job, sync_stocks_job
+from src.jobs import (
+    sync_companies_job,
+    sync_financials_job,
+    sync_stocks_job,
+)
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)

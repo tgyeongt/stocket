@@ -99,6 +99,7 @@ export interface PaginatedCompaniesResponse {
 export interface CompanyFrontendResponse {
   name: string;
   sector: string;
+  indutyCode?: string | null;
   code: string;
   score: number;
   grade: string;

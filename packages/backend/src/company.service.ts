@@ -2,7 +2,7 @@
 
 import { Company } from "@prisma/client";
 import { CompanyRepository } from "./company.repository";
-import { mapToFrontend, mapToDetail, MAIN_CORP_CODES } from "./company.mapper";
+import { mapToFrontend, mapToDetail, pickClosestByGrowthPattern } from "./company.mapper";
 import type {
   CompanyDetailResponse,
   CompanyCompareResponse,
@@ -25,29 +25,35 @@ export class CompanyService {
       throw new Error(`기업을 찾을 수 없어요: ${name}`);
     }
 
-    let peers: any[] = [];
-    if (company.indutyCode) {
-      peers = await this.companyRepository.findSimilar({
-        corpCode: company.corpCode,
-        indutyCode: company.indutyCode,
-        limit: 4,
-      });
-    }
+    const hasKnownIndustry = Boolean(company.indutyCode);
 
-    // 같은 업종 피어가 4개 미만이면 주요 기업으로 보완
+    let peers: any[] = hasKnownIndustry
+      ? await this.companyRepository.findSimilar({
+          corpCode: company.corpCode,
+          indutyCode: company.indutyCode as string,
+          limit: 4,
+        })
+      : await this.companyRepository.findGrowthPatternCandidates({
+          excludeCorpCode: company.corpCode,
+          excludeStockCode: company.stockCode,
+          limit: 4,
+        });
+    peers = pickClosestByGrowthPattern(company, peers, 4);
+
+    // 같은 업종 피어(또는 "기타" 카테고리 후보)가 4개 미만이면
+    // 업종 제한 없이 성장 패턴이 가장 비슷한 기업으로 보완
     if (peers.length < 4) {
-      const excludeCodes = new Set([
+      const excludeCorpCodes = new Set([
         company.corpCode,
         ...peers.map((p: any) => p.corpCode),
       ]);
-      const fillCodes = MAIN_CORP_CODES
-        .filter((c) => !excludeCodes.has(c))
-        .slice(0, 4 - peers.length);
-
-      if (fillCodes.length > 0) {
-        const extras = await this.companyRepository.findManyDetailByCorpCodes(fillCodes);
-        peers = [...peers, ...extras];
-      }
+      const fillCandidates = await this.companyRepository.findGrowthPatternCandidates({
+        excludeCorpCode: company.corpCode,
+        excludeStockCode: company.stockCode,
+        limit: 4 - peers.length,
+      });
+      const filtered = fillCandidates.filter((c: any) => !excludeCorpCodes.has(c.corpCode));
+      peers = [...peers, ...pickClosestByGrowthPattern(company, filtered, 4 - peers.length)];
     }
 
     return mapToFrontend(company, peers);
@@ -104,11 +110,12 @@ export class CompanyService {
       return [];
     }
 
-    const similar = await this.companyRepository.findSimilar({
+    const candidates = await this.companyRepository.findSimilar({
       corpCode: params.corpCode,
       indutyCode: base.indutyCode,
       limit: params.limit,
     });
+    const similar = pickClosestByGrowthPattern(base, candidates, params.limit);
 
     return similar.map((c) => ({
       id: c.id,

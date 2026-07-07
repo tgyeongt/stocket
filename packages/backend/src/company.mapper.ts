@@ -10,23 +10,15 @@ export const bigintToStr = (v: bigint | number | null | undefined): string | nul
 
 // 배치(packages/data)가 아직 점수를 계산하지 못한 회사를 위한 중립값
 // (score 계산 로직 자체는 Python 배치 잡의 scoring_service.py가 전담한다)
+// grade 등급 기준(85/70/50)은 scoring_service.py의 _calc_grade와 반드시 일치시킨다.
 export const DEFAULT_SCORE = {
   growth: 50,
   stability: 50,
   profitability: 50,
   momentum: 50,
   overall: 50,
-  grade: "성장 잠재력 낮음",
+  grade: "성장 잠재력 보통",
 };
-
-// 주요 5개 기업 corp_code (피어 수가 부족할 때 보완용)
-export const MAIN_CORP_CODES = [
-  "00126380", // 삼성전자
-  "00164779", // SK하이닉스
-  "00266961", // NAVER
-  "00258801", // 카카오
-  "01515323", // LG에너지솔루션
-];
 
 // DART 업종코드 앞 3자리 → 한글 업종명
 const INDUSTRY_CODE_MAP: Record<string, string> = {
@@ -223,12 +215,35 @@ function extractPriceHistory(recentPrices: any[]): { date: string; price: number
     }));
 }
 
-// ── Peer 유사도 추정 ──────────────────────────────────────────
+// ── 성장 패턴 유사도 (저장된 growth/momentum 점수 거리 기반) ──────
+// 재계산하지 않고 배치가 미리 계산해 저장한 CompanyScore를 그대로 읽는다.
 
-function estimateCorrelation(baseIndutyCode: string | null, peerIndutyCode: string | null): number {
-  if (!baseIndutyCode || !peerIndutyCode) return 70;
-  const samePrefix = baseIndutyCode.slice(0, 2) === peerIndutyCode.slice(0, 2);
-  return samePrefix ? 85 : 68;
+function scoreAxes(entity: any): { growth: number; momentum: number } {
+  const s = entity?.score ?? null;
+  return {
+    growth: s?.growth ?? DEFAULT_SCORE.growth,
+    momentum: s?.momentum ?? DEFAULT_SCORE.momentum,
+  };
+}
+
+function axesDistanceScore(
+  a: { growth: number; momentum: number },
+  b: { growth: number; momentum: number },
+): number {
+  const dist = Math.sqrt((a.growth - b.growth) ** 2 + (a.momentum - b.momentum) ** 2);
+  const maxDist = Math.sqrt(2) * 100;
+  return Math.round(Math.max(50, 98 - (dist / maxDist) * 48));
+}
+
+function growthPatternSimilarity(baseEntity: any, peerEntity: any): number {
+  return axesDistanceScore(scoreAxes(baseEntity), scoreAxes(peerEntity));
+}
+
+// 성장 패턴 유사도순으로 정렬 후 상위 limit개만 선택
+export function pickClosestByGrowthPattern<T>(baseEntity: any, candidates: T[], limit: number): T[] {
+  return [...candidates]
+    .sort((a, b) => growthPatternSimilarity(baseEntity, b) - growthPatternSimilarity(baseEntity, a))
+    .slice(0, limit);
 }
 
 // ── Prisma 모델 → CompanyFrontendResponse 변환 ────────────────
@@ -246,11 +261,13 @@ export function mapToFrontend(company: any, peers: any[]): CompanyFrontendRespon
     momentum: score?.momentum ?? DEFAULT_SCORE.momentum,
   };
 
-  const peerList = peers.map((p) => ({
-    name: p.corpName as string,
-    correlation: estimateCorrelation(company.indutyCode, p.indutyCode),
-    score: p.score?.overall ?? DEFAULT_SCORE.overall,
-  }));
+  const peerList = peers
+    .map((p) => ({
+      name: p.corpName as string,
+      correlation: growthPatternSimilarity(company, p),
+      score: p.score?.overall ?? DEFAULT_SCORE.overall,
+    }))
+    .sort((a, b) => b.correlation - a.correlation);
 
   const growthRate = f?.revenueGrowthRate ?? 7;
   const momentum6m = m?.momentum6m ?? 0;

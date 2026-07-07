@@ -44,6 +44,12 @@ export default function SimulationChart({ data }: SimulationChartProps) {
           <Tooltip
             contentStyle={{ background: "#1A1D27", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8, color: "#F1F5F9", fontSize: 12 }}
             labelStyle={{ color: "#94A3B8" }}
+            formatter={(value) => {
+              if (typeof value !== "number") return [String(value), "성장 지수"];
+              const diff = value - 100;
+              const sign = diff >= 0 ? "+" : "";
+              return [`${value} (${sign}${diff}%)`, "성장 지수"];
+            }}
           />
           <Area
             type="monotone"

@@ -24,6 +24,7 @@ class Company(Base):
     ceoName = Column("ceoName", String, nullable=True)
     createdAt = Column("createdAt", DateTime, default=datetime.utcnow)
     updatedAt = Column("updatedAt", DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    lastAccessedAt = Column("lastAccessedAt", DateTime, nullable=True)
 
     financials = relationship("FinancialStatement", back_populates="company", lazy="dynamic")
     stock_prices = relationship("StockPrice", back_populates="company", lazy="dynamic")

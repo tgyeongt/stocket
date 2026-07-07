@@ -65,10 +65,9 @@ def _calc_overall(df: pd.DataFrame) -> pd.Series:
 
 
 def _calc_grade(overall: pd.Series) -> pd.Series:
-    grade = pd.Series("성장 잠재력 매우 낮음", index=overall.index)
-    grade.loc[overall >= 45] = "성장 잠재력 낮음"
-    grade.loc[overall >= 60] = "성장 잠재력 보통"
-    grade.loc[overall >= 75] = "성장 잠재력 높음"
+    grade = pd.Series("성장 잠재력 낮음", index=overall.index)
+    grade.loc[overall >= 50] = "성장 잠재력 보통"
+    grade.loc[overall >= 70] = "성장 잠재력 높음"
     grade.loc[overall >= 85] = "성장 잠재력 매우 높음"
     return grade
 

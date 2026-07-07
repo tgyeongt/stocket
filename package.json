@@ -1,14 +1,22 @@
 {
   "name": "stocket",
   "private": true,
-  "packageManager": "npm@10.9.3",
+  "packageManager": "yarn@4.15.0",
   "engines": {
     "node": "22.x"
   },
   "workspaces": [
     "packages/*"
   ],
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:frontend": "yarn workspace frontend dev",
+    "dev:backend": "yarn workspace backend dev",
+    "build": "turbo build",
+    "lint": "turbo lint"
+  },
   "devDependencies": {
-    "turbo": "^2.9.6"
+    "turbo": "^2.9.6",
+    "typescript": "^5"
   }
 }
