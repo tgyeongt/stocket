@@ -5,10 +5,8 @@
   "main": "index.js",
   "scripts": {
     "tsoa": "tsoa spec-and-routes",
-    "predev": "yarn tsoa",
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "prebuild": "yarn tsoa",
-    "build": "prisma generate && tsc",
+    "dev": "yarn tsoa && ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "yarn tsoa && prisma generate && tsc",
     "start": "node dist/index.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
