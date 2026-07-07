@@ -178,8 +178,9 @@ class FinancialSyncService:
         df["prev_revenue"] = df["revenue"].shift(1)
 
         # 배치 대상 연도 중 가장 이른 해는 DB에 저장된 전년도 매출로 성장률 기준을 보완
-        earliest_year = df.loc[0, "year"]
-        earliest_report_type = df.loc[0, "report_type"]
+        # (df.loc가 반환하는 numpy.int64는 psycopg2가 바인딩 못 하므로 plain int로 변환)
+        earliest_year = int(df.loc[0, "year"])
+        earliest_report_type = str(df.loc[0, "report_type"])
         prev_record = self._financial_repo.find_by_year(company.id, earliest_year - 1, earliest_report_type)
         if prev_record is not None:
             df.loc[0, "prev_revenue"] = prev_record.revenue
@@ -188,7 +189,7 @@ class FinancialSyncService:
 
         synced = 0
         for _, row in df.iterrows():
-            metrics = {k: (None if pd.isna(row[k]) else row[k]) for k in _RATIO_COLUMNS}
+            metrics = {k: (None if pd.isna(row[k]) else float(row[k])) for k in _RATIO_COLUMNS}
             self._financial_repo.upsert({
                 "company_id":       company.id,
                 "year":             int(row["year"]),

@@ -1,5 +1,7 @@
 # dependencies
 node_modules
+packages/data/venv/
+packages/data/.venv/
 
 # Yarn Berry
 .yarn/*
