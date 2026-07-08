@@ -1,11 +1,13 @@
 import "dotenv/config";
+import fs from "fs";
+import path from "path";
 import cors from "cors";
 import express from "express";
-import { PrismaClient } from "@prisma/client";
+import swaggerUi from "swagger-ui-express";
+import { ValidateError } from "@tsoa/runtime";
+import type { Request, Response, NextFunction } from "express";
 
-import { CompanyRepository } from "./company.repository";
-import { CompanyService } from "./company.service";
-import { CompanyController } from "./company.controller";
+import { RegisterRoutes } from "./generated/routes";
 
 const app = express();
 
@@ -13,37 +15,28 @@ app.use(express.json());
 const ALLOWED_ORIGIN = process.env.FRONTEND_URL ?? "http://localhost:3000";
 app.use(cors({ origin: ALLOWED_ORIGIN }));
 
-// 의존성 주입
-const prisma = new PrismaClient();
-const companyRepository = new CompanyRepository(prisma);
-const companyService = new CompanyService(companyRepository);
-const companyController = new CompanyController(companyService);
+// tsoa가 생성한 스펙(build/swagger.json)을 그대로 Swagger UI에 서빙한다.
+// 컨트롤러(company.controller.ts)를 고치면 `npm run tsoa`로 스펙도 함께 갱신되므로
+// 스펙과 실제 라우팅이 어긋날 일이 없다.
+const swaggerSpecPath = path.join(__dirname, "../build/swagger.json");
+const loadSwaggerSpec = () => JSON.parse(fs.readFileSync(swaggerSpecPath, "utf8"));
 
-// ⚠️ 구체적인 경로를 :param 경로보다 먼저 등록해야 한다
-app.get(
-  "/api/companies/search",
-  companyController.search.bind(companyController),
-);
+app.use("/docs", swaggerUi.serve, (_req: Request, res: Response) => {
+  res.send(swaggerUi.generateHTML(loadSwaggerSpec()));
+});
+app.get("/openapi.json", (_req, res) => res.json(loadSwaggerSpec()));
 
-app.get(
-  "/api/companies/by-name/:name",
-  companyController.getByName.bind(companyController),
-);
+// tsoa가 company.controller.ts의 @Route/@Get/@Post 데코레이터로부터 생성한 라우트
+RegisterRoutes(app);
 
-app.get(
-  "/api/companies/:corpCode",
-  companyController.getDetail.bind(companyController),
-);
-
-app.get(
-  "/api/companies/:corpCode/similar",
-  companyController.getSimilar.bind(companyController),
-);
-
-app.post(
-  "/api/companies/compare",
-  companyController.compare.bind(companyController),
-);
+// tsoa 자체 검증(파라미터 타입/범위) 실패 시 공통 에러 포맷으로 응답
+app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof ValidateError) {
+    res.status(400).json({ success: false, errors: err.fields });
+    return;
+  }
+  next(err);
+});
 
 const PORT = process.env.PORT ?? 3001;
 app.listen(PORT, () => {

@@ -1,101 +1,120 @@
-import { Request, Response } from "express";
+// src/company.controller.ts
+//
+// tsoa 데코레이터로 라우팅+검증+OpenAPI 스펙을 이 파일 하나에서 함께 생성한다
+// (build/routes.ts, build/swagger.json은 `npm run tsoa`로 생성되는 산출물).
+// 라우트 등록 순서 = 클래스 메서드 선언 순서이므로, 더 구체적인 경로
+// (search)를 :param 경로(getDetail)보다 먼저 선언해야 한다.
+
+import { Body, Controller, Get, Path, Post, Query, Queries, Route, Tags } from "tsoa";
 import { CompanyService } from "./company.service";
-import {
-  GetCompanyRequestDto,
-  SearchCompanyRequestDto,
-  GetSimilarCompaniesRequestDto,
-  CompareCompaniesRequestDto,
+import type {
+  ApiError,
+  CompanyCompareResponse,
+  CompanyDetailResponse,
+  CompanyFrontendResponse,
+  CompareCompaniesRequestBody,
+  PaginatedCompaniesResponse,
+  SearchCompanyQuery,
+  SimilarCompanyResponse,
 } from "./company.dto";
 
-export class CompanyController {
-  constructor(private readonly companyService: CompanyService) {}
+function toErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
 
-  // GET /api/companies/by-name/:name
-  async getByName(req: Request, res: Response): Promise<void> {
-    const name = (Array.isArray(req.params.name) ? req.params.name[0] : req.params.name)?.trim();
-    if (!name) {
-      res.status(400).json({ success: false, error: "기업명을 입력해주세요" });
-      return;
-    }
+@Route("api/companies")
+@Tags("companies")
+export class CompanyController extends Controller {
+  constructor(private readonly companyService: CompanyService) {
+    super();
+  }
 
+  /**
+   * 기업 검색 (페이징). corpName 또는 stockCode에 부분 일치.
+   */
+  @Get("search")
+  public async search(
+    @Queries() query: SearchCompanyQuery,
+  ): Promise<{ success: true } & PaginatedCompaniesResponse> {
+    const data = await this.companyService.search({
+      query: query.query,
+      market: query.market,
+      sector: query.sector,
+      page: query.page ?? 1,
+      limit: query.limit ?? 10,
+    });
+    return { success: true, ...data };
+  }
+
+  /**
+   * 기업명으로 프론트엔드용 상세 조회 (성장성 점수 포함).
+   * DB에 저장된 값을 그대로 읽어 응답한다 — 점수는 packages/data 배치 잡이 미리 계산한다.
+   */
+  @Get("by-name/{name}")
+  public async getByName(
+    @Path() name: string,
+  ): Promise<{ success: true; data: CompanyFrontendResponse } | ApiError> {
     try {
       const data = await this.companyService.getByName(name);
-      res.json({ success: true, data });
+      return { success: true, data };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(404).json({ success: false, error: message });
+      this.setStatus(404);
+      return { success: false, error: toErrorMessage(err) };
     }
   }
 
-  // GET /api/companies/:corpCode
-  async getDetail(req: Request, res: Response): Promise<void> {
-    const parsed = GetCompanyRequestDto.safeParse(req.params);
-    if (!parsed.success) {
-      res
-        .status(400)
-        .json({ success: false, errors: parsed.error.flatten().fieldErrors });
-      return;
-    }
-
+  /**
+   * DART 고유번호(corpCode)로 기업 상세 조회 (원본 재무/주가 데이터).
+   * @minLength corpCode 8 corpCode는 8자리여야 합니다
+   * @maxLength corpCode 8 corpCode는 8자리여야 합니다
+   */
+  @Get("{corpCode}")
+  public async getDetail(
+    @Path() corpCode: string,
+  ): Promise<{ success: true; data: CompanyDetailResponse } | ApiError> {
     try {
-      const data = await this.companyService.getDetail(parsed.data.corpCode);
-      res.json({ success: true, data });
+      const data = await this.companyService.getDetail(corpCode);
+      return { success: true, data };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(404).json({ success: false, error: message });
+      this.setStatus(404);
+      return { success: false, error: toErrorMessage(err) };
     }
   }
 
-  // GET /api/companies/search?query=삼성&market=코스피&page=1&limit=10
-  async search(req: Request, res: Response): Promise<void> {
-    const parsed = SearchCompanyRequestDto.safeParse(req.query);
-    if (!parsed.success) {
-      res
-        .status(400)
-        .json({ success: false, errors: parsed.error.flatten().fieldErrors });
-      return;
-    }
-
-    const data = await this.companyService.search(parsed.data); // ✅ this. 추가
-    res.json({ success: true, ...data });
-  }
-
-  // GET /api/companies/:corpCode/similar?limit=5
-  async getSimilar(req: Request, res: Response): Promise<void> {
-    const parsed = GetSimilarCompaniesRequestDto.safeParse({
-      corpCode: req.params.corpCode,
-      limit: req.query.limit,
-    });
-    if (!parsed.success) {
-      res
-        .status(400)
-        .json({ success: false, errors: parsed.error.flatten().fieldErrors });
-      return;
-    }
-
+  /**
+   * 같은 업종(indutyCode 앞 2자리) 유사 기업 조회.
+   * @minLength corpCode 8 corpCode는 8자리여야 합니다
+   * @maxLength corpCode 8 corpCode는 8자리여야 합니다
+   * @minimum limit 1
+   * @maximum limit 10
+   */
+  @Get("{corpCode}/similar")
+  public async getSimilar(
+    @Path() corpCode: string,
+    @Query() limit = 5,
+  ): Promise<{ success: true; data: SimilarCompanyResponse[] } | ApiError> {
     try {
-      const data = await this.companyService.getSimilar(parsed.data); // ✅ this. 추가
-      res.json({ success: true, data });
+      const data = await this.companyService.getSimilar({ corpCode, limit });
+      return { success: true, data };
     } catch (err) {
-      res.status(404).json({ success: false, error: String(err) });
+      this.setStatus(404);
+      return { success: false, error: toErrorMessage(err) };
     }
   }
 
-  // POST /api/companies/compare
-  async compare(req: Request, res: Response): Promise<void> {
-    const parsed = CompareCompaniesRequestDto.safeParse(req.body);
-    if (!parsed.success) {
-      res
-        .status(400)
-        .json({ success: false, errors: parsed.error.flatten().fieldErrors });
-      return;
-    }
-
+  /**
+   * 여러 기업 비교 (재무/주가 + 업종 평균).
+   */
+  @Post("compare")
+  public async compare(
+    @Body() body: CompareCompaniesRequestBody,
+  ): Promise<{ success: true; data: CompanyCompareResponse } | ApiError> {
     try {
-      const data = await this.companyService.compare(parsed.data.corpCodes);
-      res.json({ success: true, data });
+      const data = await this.companyService.compare(body.corpCodes);
+      return { success: true, data };
     } catch (err) {
-      res.status(500).json({ success: false, error: String(err) });
+      this.setStatus(500);
+      return { success: false, error: toErrorMessage(err) };
     }
   }
 }

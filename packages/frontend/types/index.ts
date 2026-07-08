@@ -5,10 +5,15 @@ export interface AxisScores {
   momentum: number;    // 시장 모멘텀
 }
 
+export interface WhySegment {
+  text: string;
+  tone?: "positive" | "warning" | "negative";
+}
+
 export interface WhyCard {
   icon: string;
   title: string;
-  body: string;
+  segments: WhySegment[];
 }
 
 export interface FinTag {

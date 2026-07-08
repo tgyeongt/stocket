@@ -1,6 +1,8 @@
 certifi
 charset-normalizer
 idna
+numpy
+pandas
 python-dateutil
 python-dotenv
 pytz
@@ -16,6 +18,3 @@ loguru
 xmltodict
 apscheduler
 schedule
-redis
-uvicorn
-fastapi

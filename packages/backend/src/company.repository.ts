@@ -34,6 +34,7 @@ export class CompanyRepository {
           orderBy: { calcDate: "desc" },
           take: 1,
         },
+        score: true,
       },
     });
   }
@@ -67,6 +68,7 @@ export class CompanyRepository {
           orderBy: { date: "desc" },
           take: 90,
         },
+        score: true,
       },
     });
   }
@@ -95,6 +97,7 @@ export class CompanyRepository {
           },
           take: 90,
         },
+        score: true,
       },
     });
   }
@@ -125,6 +128,7 @@ export class CompanyRepository {
           },
           take: 90,
         },
+        score: true,
       },
     });
   }
@@ -219,43 +223,7 @@ export class CompanyRepository {
           ],
           take: 1,
         },
-      },
-      take: Math.min(params.limit * 3, 30),
-    });
-  }
-
-  // DB에 아직 없는 기업(Python 실시간 조회 결과)의 피어 보완용.
-  // corpCode가 없으므로 stockCode로 자기 자신을 제외한다.
-  findByIndustryPrefix(params: { excludeStockCode: string | null; indutyCode: string; limit: number }) {
-    const prefix = params.indutyCode.slice(0, 2);
-
-    return this.prisma.company.findMany({
-      where: {
-        indutyCode: {
-          startsWith: prefix,
-        },
-        stockCode: {
-          not: null,
-        },
-        ...(params.excludeStockCode
-          ? { NOT: { stockCode: params.excludeStockCode } }
-          : {}),
-      },
-      include: {
-        stockMetrics: {
-          orderBy: {
-            calcDate: "desc",
-          },
-          take: 1,
-        },
-        financials: {
-          orderBy: [
-            {
-              year: "desc",
-            },
-          ],
-          take: 1,
-        },
+        score: true,
       },
       take: Math.min(params.limit * 3, 30),
     });
@@ -291,6 +259,7 @@ export class CompanyRepository {
           ],
           take: 1,
         },
+        score: true,
       },
       take: Math.max(params.limit * 15, 60),
     });

@@ -68,3 +68,11 @@ class FinancialRepository:
             )
             .first()
         )
+
+    def find_latest(self, company_id: str) -> FinancialStatement | None:
+        return (
+            self._s.query(FinancialStatement)
+            .filter_by(companyId=company_id)
+            .order_by(FinancialStatement.year.desc(), FinancialStatement.quarter.desc())
+            .first()
+        )

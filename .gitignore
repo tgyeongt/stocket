@@ -1,5 +1,7 @@
 # dependencies
 node_modules
+packages/data/venv/
+packages/data/.venv/
 
 # Yarn Berry
 .yarn/*
@@ -22,6 +24,9 @@ node_modules
 # compiled output
 dist/
 build/
+
+# tsoa codegen (regenerated via `yarn tsoa` from company.controller.ts)
+packages/backend/src/generated/
 
 # typescript
 *.tsbuildinfo

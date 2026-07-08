@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "prisma generate && tsc",
+    "tsoa": "tsoa spec-and-routes",
+    "dev": "yarn tsoa && ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "yarn tsoa && prisma generate && tsc",
     "start": "node dist/index.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
@@ -16,14 +17,18 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@tsoa/runtime": "^6.6.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "swagger-ui-express": "^5.0.1",
+    "tsoa": "^6.6.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
+    "@types/swagger-ui-express": "^4.1.8",
     "prisma": "^6.19.3",
     "ts-node-dev": "^2.0.0",
     "typescript": "^6.0.3"

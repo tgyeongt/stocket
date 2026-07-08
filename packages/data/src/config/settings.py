@@ -16,8 +16,6 @@ class Settings(BaseSettings):
     kis_app_key: str
     kis_app_secret: str
 
-    redis_url: str = "redis://localhost:6379/0"
-
     class Config:
         env_file = str(ENV_FILE)
         case_sensitive = False

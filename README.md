@@ -38,13 +38,13 @@
 
 ### Data Pipeline
 
-| 항목     | 기술                    |
-| -------- | ----------------------- |
-| Language | Python 3                |
-| 외부 API | DART, 한국투자증권(KIS) |
-| 캐시     | Redis (Docker)          |
-| API 서버 | FastAPI + Uvicorn       |
-| 스케줄링 | GitHub Actions (Cron)   |
+| 항목     | 기술                          |
+| -------- | ----------------------------- |
+| Language | Python 3 (pandas, SQLAlchemy) |
+| 외부 API | DART, 한국투자증권(KIS)       |
+| 스케줄링 | GitHub Actions (Cron)         |
+
+> 상시 서버가 아니라 배치 전용입니다. GitHub Actions cron이 DART/KIS를 호출해 재무비율·주가지표·성장성 점수(growth/stability/profitability/momentum)를 pandas로 계산하고 Postgres에 저장합니다. Node 백엔드는 이 값을 재계산 없이 그대로 읽어 응답합니다.
 
 ### Infra & DevOps
 
@@ -71,10 +71,8 @@
    │
    ▼
 [AWS EC2]
-   ├── Node.js 백엔드 (PM2, 3001 포트)
-   ├── FastAPI 데이터 서버 (PM2, 8000 포트)
-   ├── PostgreSQL (Docker, 5433 포트)
-   └── Redis (Docker, 6379 포트)
+   ├── Node.js 백엔드 (PM2, 3001 포트) — 유일한 API 서버
+   └── PostgreSQL (Docker, 5433 포트)
 
 [GitHub Actions]
    ├── CI: PR/push 시 lint & build 검증
@@ -103,39 +101,20 @@ stocket/
 
 ---
 
-## 데이터 최적화 전략
+## 데이터 아키텍처
 
-DB에 모든 데이터를 저장하면 용량이 과다하고, 매번 실시간 API를 호출하면 느리다는 문제를 해결하기 위해 4가지 전략을 적용했습니다.
+Python(packages/data)은 상시 서버가 아니라 배치 전용입니다. 요청 시점에 실시간으로 외부 API를 호출하지 않고, GitHub Actions cron이 주기적으로 DART/KIS 데이터를 가져와 재무비율·주가지표·성장성 점수까지 미리 계산해 Postgres에 저장합니다.
 
-### 1. Redis 응답 캐시
-
-`/company` 엔드포인트 응답을 Redis에 TTL 1시간으로 캐시합니다. 반복 조회 시 외부 API 호출 없이 즉시 반환합니다. Redis 연결 실패 시에도 캐시 없이 정상 동작합니다 (Graceful Degradation).
-
-### 2. DART/KIS 병렬 호출
-
-첫 조회(캐시 미스) 시 `asyncio.gather`로 4개 API 호출(기업정보, 당기 재무제표, 전기 재무제표, 주가)을 동시에 실행합니다. 기존 순차 호출 대비 약 50% 속도 개선.
-
-### 3. Hot/Cold 데이터 분리
-
-`lastAccessedAt` 컬럼으로 기업을 Hot(최근 30일 조회) / Cold(미조회)로 분류합니다.
-
-- **Hot 기업**: 주가·재무 동기화 우선 대상
-- **Cold 기업**: 매일 새벽 3시에 주가·지표 데이터 일괄 삭제 → DB 용량 70~80% 절감
-
-### 4. Background Prefetch
-
-평일 오전 7:30, 주가 동기화 직후 Hot 기업의 `/company` 응답을 사전 캐싱합니다. 인기 기업은 첫 조회도 빠르게 응답합니다.
-
----
+- **계산은 Python, 응답은 Node**: growth/stability/profitability/momentum/overall 점수 공식은 `packages/data`의 `scoring_service.py` 한 곳에서만 계산되고, Node는 저장된 값을 Prisma로 읽어 그대로 응답합니다.
+- **상장 기업 전체를 대상으로 동기화**: 인기 여부와 무관하게 코스피/코스닥/코넥스 전 종목을 배치가 주기적으로 갱신하므로, 별도의 응답 캐시나 인기 기업 우선순위 로직이 필요 없습니다.
 
 ## 데이터 동기화 스케줄
 
-| 작업            | 주기                       | 설명                              |
-| --------------- | -------------------------- | --------------------------------- |
-| 주가 동기화     | 평일 오전 7시 (KST)        | KIS API로 최신 주가 업데이트      |
-| 캐시 프리페치   | 평일 오전 7시 30분 (KST)   | Hot 기업 응답 사전 캐싱           |
-| 재무제표 동기화 | 매주 일요일 새벽 2시 (KST) | DART API로 재무 데이터 업데이트   |
-| Cold 데이터 정리 | 매일 새벽 3시 (KST)       | 30일 미조회 기업 주가·지표 삭제   |
+| 작업             | 주기                       | 설명                             |
+| ---------------- | -------------------------- | -------------------------------- |
+| 주가 동기화       | 평일 오전 7시 (KST)        | KIS API로 최신 주가·지표·점수 갱신 |
+| 재무제표 동기화   | 매주 일요일 새벽 2시 (KST) | DART API로 재무 데이터·점수 갱신  |
+| 업종코드 보완     | 매일 새벽 5시 (KST)        | indutyCode 없는 기업 DART 상세정보 보완 |
 
 ---
 
