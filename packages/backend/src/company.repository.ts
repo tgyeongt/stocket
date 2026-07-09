@@ -48,28 +48,41 @@ export class CompanyRepository {
   }
 
   // ── 이름으로 단일 상세 조회 ──────────────────────────────────
+  // "카카오"처럼 계열사(카카오뱅크/카카오페이 등)가 많은 이름은 부분 일치만으로
+  // 조회하면 데이터 없는 계열사가 먼저 걸릴 수 있어, 정확히 일치하는 이름을 우선한다.
 
-  findDetailByName(name: string) {
+  private readonly detailByNameInclude = {
+    financials: {
+      orderBy: [{ year: "desc" as const }, { quarter: "desc" as const }],
+      take: 1,
+    },
+    stockMetrics: {
+      orderBy: { calcDate: "desc" as const },
+      take: 1,
+    },
+    stockPrices: {
+      orderBy: { date: "desc" as const },
+      take: 90,
+    },
+    score: true,
+  };
+
+  async findDetailByName(name: string) {
+    const exact = await this.prisma.company.findFirst({
+      where: {
+        corpName: { equals: name, mode: "insensitive" },
+        stockCode: { not: null },
+      },
+      include: this.detailByNameInclude,
+    });
+    if (exact) return exact;
+
     return this.prisma.company.findFirst({
       where: {
         corpName: { contains: name, mode: "insensitive" },
         stockCode: { not: null },
       },
-      include: {
-        financials: {
-          orderBy: [{ year: "desc" }, { quarter: "desc" }],
-          take: 1,
-        },
-        stockMetrics: {
-          orderBy: { calcDate: "desc" },
-          take: 1,
-        },
-        stockPrices: {
-          orderBy: { date: "desc" },
-          take: 90,
-        },
-        score: true,
-      },
+      include: this.detailByNameInclude,
     });
   }
 
