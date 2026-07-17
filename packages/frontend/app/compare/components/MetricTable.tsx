@@ -8,12 +8,13 @@ interface MetricTableProps {
 
 export default function MetricTable({ a, b }: MetricTableProps) {
   const rows = [
-    ...AXES.map(({ key, icon, label }) => ({
-      label: `${icon} ${label}`,
+    ...AXES.map(({ key, Icon, label }) => ({
+      label,
+      Icon,
       va: a.axes[key],
       vb: b.axes[key],
     })),
-    { label: "🏆 종합 점수", va: a.score, vb: b.score },
+    { label: "종합 점수", Icon: null, va: a.score, vb: b.score },
   ];
 
   return (
@@ -31,9 +32,14 @@ export default function MetricTable({ a, b }: MetricTableProps) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ label, va, vb }) => (
+          {rows.map(({ label, Icon, va, vb }) => (
             <tr key={label} className="border-b border-[rgba(255,255,255,0.04)] last:border-0">
-              <td className="px-5 py-3 text-[#94A3B8]">{label}</td>
+              <td className="px-5 py-3 text-[#94A3B8]">
+                <span className="flex items-center gap-1.5">
+                  {Icon && <Icon />}
+                  {label}
+                </span>
+              </td>
               <td
                 className="px-5 py-3 text-right font-semibold"
                 style={{ color: va > vb ? COLOR_A : "#F1F5F9" }}
