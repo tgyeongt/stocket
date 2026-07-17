@@ -28,12 +28,15 @@ export default function CompanyCard({ company, color }: CompanyCardProps) {
         {company.grade}
       </div>
       <div className="flex flex-col gap-2.5">
-        {AXES.map(({ key, icon, label }) => {
+        {AXES.map(({ key, Icon, label }) => {
           const val = company.axes[key];
           return (
             <div key={key}>
-              <div className="flex justify-between text-[11px] text-[#94A3B8] mb-1">
-                <span>{icon} {label}</span>
+              <div className="flex justify-between items-center text-[11px] text-[#94A3B8] mb-1">
+                <span className="flex items-center gap-1.5">
+                  <Icon />
+                  {label}
+                </span>
                 <span className="font-semibold text-[#F1F5F9]">{val}</span>
               </div>
               <div className="h-[5px] bg-[#22263A] rounded-full overflow-hidden">

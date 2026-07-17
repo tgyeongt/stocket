@@ -10,9 +10,7 @@ class Settings(BaseSettings):
     database_url: str
 
     dart_api_key: str
-    dart_request_delay: float = 0.5
 
-    kis_base_url: str = "https://openapi.koreainvestment.com:9443"
     kis_app_key: str
     kis_app_secret: str
 

@@ -36,6 +36,8 @@ export function useCompany(initial?: string): UseCompanyReturn {
   }, []);
 
   // 초기 기업명이 있으면 마운트 시 자동 조회
+  // setTimeout으로 감싸는 이유: effect 본문에서 곧바로 setState하면
+  // react-hooks/set-state-in-effect 린트 규칙에 걸린다.
   useEffect(() => {
     if (!initial) return;
     const id = setTimeout(() => fetchCompany(initial), 0);

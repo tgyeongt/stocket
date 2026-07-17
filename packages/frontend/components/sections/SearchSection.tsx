@@ -1,13 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, KeyboardEvent } from "react";
+import { useState, useRef, KeyboardEvent } from "react";
+import { useCompanySuggestions, useClickOutside } from "@/hooks/useCompanySuggestions";
 
 const QUICK_CHIPS = ["삼성전자", "SK하이닉스", "NAVER", "카카오", "LG에너지솔루션"];
-
-interface Suggestion {
-  corpName: string;
-  stockCode: string;
-}
 
 interface SearchSectionProps {
   onSearch: (name: string) => void;
@@ -21,87 +17,17 @@ export default function SearchSection({
   activeChip,
 }: SearchSectionProps) {
   const [input, setInput] = useState(activeChip);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [open, setOpen] = useState(false);
+  // 최초 마운트 및 칩/제안 선택 직후에는 자동완성 검색을 건너뜀
+  const [selected, setSelected] = useState(true);
   const [focusedIdx, setFocusedIdx] = useState(-1);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const skipSearchRef = useRef(false);
-  const isMountedRef = useRef(false);
 
-  // 입력값이 바뀔 때마다 300ms 디바운스 후 검색 API 호출
-  useEffect(() => {
-    // 최초 마운트 시 자동완성 건너뜀
-    if (!isMountedRef.current) {
-      isMountedRef.current = true;
-      return;
-    }
-    // 칩/제안 선택으로 인한 input 변경은 자동완성 건너뜀
-    if (skipSearchRef.current) {
-      skipSearchRef.current = false;
-      return;
-    }
+  const { suggestions, setSuggestions, open, setOpen } = useCompanySuggestions(input, selected, 8);
 
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(async () => {
-      const query = input.trim();
-      if (!query) {
-        setSuggestions([]);
-        setOpen(false);
-        return;
-      }
-      try {
-        const res = await fetch(
-          `/api/companies/search?query=${encodeURIComponent(query)}&limit=8`
-        );
-        if (!res.ok) return;
-        const body = await res.json();
-        const seen = new Set<string>();
-        const items: Suggestion[] = (body.data ?? [])
-          .map((d: { corpName?: string; name?: string; stockCode?: string; code?: string }) => ({
-            corpName: d.corpName ?? d.name ?? "",
-            stockCode: d.stockCode ?? d.code ?? "",
-          }))
-          .filter((s: Suggestion) => {
-            const key = s.stockCode || s.corpName;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-        setSuggestions(items);
-        setOpen(items.length > 0);
-        setFocusedIdx(-1);
-      } catch {
-        // 자동완성 실패는 무시
-      }
-    }, 300);
+  useClickOutside(wrapperRef, () => setOpen(false));
 
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [input]);
-
-  // 외부 클릭 시 드롭다운 닫기
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  function selectSuggestion(name: string) {
-    skipSearchRef.current = true;
-    setInput(name);
-    setSuggestions([]);
-    setOpen(false);
-    onSearch(name);
-  }
-
-  function handleChip(name: string) {
-    skipSearchRef.current = true;
+  function pick(name: string) {
+    setSelected(true);
     setInput(name);
     setSuggestions([]);
     setOpen(false);
@@ -125,7 +51,7 @@ export default function SearchSection({
         return;
       }
       if (e.key === "Enter" && focusedIdx >= 0) {
-        selectSuggestion(suggestions[focusedIdx].corpName);
+        pick(suggestions[focusedIdx].corpName);
         return;
       }
     }
@@ -146,7 +72,11 @@ export default function SearchSection({
           <input
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setFocusedIdx(-1);
+              if (selected) setSelected(false);
+            }}
             onFocus={() => suggestions.length > 0 && setOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder="기업명 또는 종목코드 입력 (예: 삼성전자, 005930)"
@@ -158,7 +88,7 @@ export default function SearchSection({
               {suggestions.map((s, idx) => (
                 <li
                   key={s.stockCode || s.corpName}
-                  onMouseDown={() => selectSuggestion(s.corpName)}
+                  onMouseDown={() => pick(s.corpName)}
                   onMouseEnter={() => setFocusedIdx(idx)}
                   className={`flex items-center justify-between px-[18px] py-[11px] cursor-pointer transition-colors ${
                     idx === focusedIdx
@@ -191,7 +121,7 @@ export default function SearchSection({
         {QUICK_CHIPS.map((name) => (
           <button
             key={name}
-            onClick={() => handleChip(name)}
+            onClick={() => pick(name)}
             className={`rounded-full px-3.5 py-[5px] text-[12px] cursor-pointer border transition-all font-[inherit] ${
               activeChip === name
                 ? "border-[#22C55E] text-[#22C55E] bg-[rgba(34,197,94,0.08)]"

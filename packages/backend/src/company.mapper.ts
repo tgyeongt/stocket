@@ -2,7 +2,23 @@
 //
 // Prisma 모델 → 프론트엔드 응답 DTO 변환 (순수 함수 모음, DB/네트워크 접근 없음)
 
-import type { CompanyDetailResponse, CompanyFrontendResponse } from "./company.dto";
+import type { CompanyDetailResponse, CompanyFrontendResponse, CompanyResponse } from "./company.dto";
+
+// ── Prisma Company → CompanyResponse 공통 필드 변환 ────────────
+
+export function toCompanyResponse(c: any): CompanyResponse {
+  return {
+    id: c.id,
+    corpCode: c.corpCode,
+    corpName: c.corpName,
+    stockCode: c.stockCode,
+    indutyCode: c.indutyCode,
+    indutyName: c.indutyName,
+    sector: c.sector,
+    market: c.market,
+    ceoName: c.ceoName,
+  };
+}
 
 // BigInt → string 직렬화 헬퍼
 export const bigintToStr = (v: bigint | number | null | undefined): string | null =>
@@ -75,19 +91,19 @@ function generateWhyCards(
   if (financial?.revenueGrowthRate != null) {
     const rate = financial.revenueGrowthRate;
     if (rate >= 15) {
-      cards.push({ icon: "📈", title: "매출이 빠르게 성장하고 있어요", segments: [
+      cards.push({ icon: "revenue", title: "매출이 빠르게 성장하고 있어요", segments: [
         { text: "매출 성장률이 " }, highlight(pct(rate), "positive"), { text: "로, 업계 평균을 크게 웃도는 강한 성장세예요." },
       ] });
     } else if (rate >= 5) {
-      cards.push({ icon: "📊", title: "매출이 꾸준히 성장하고 있어요", segments: [
+      cards.push({ icon: "revenue", title: "매출이 꾸준히 성장하고 있어요", segments: [
         { text: "매출이 " }, highlight(pct(rate), "positive"), { text: " 성장하며 안정적인 성장 흐름을 이어가고 있어요." },
       ] });
     } else if (rate >= 0) {
-      cards.push({ icon: "📉", title: "매출 성장이 정체되고 있어요", segments: [
+      cards.push({ icon: "revenue", title: "매출 성장이 정체되고 있어요", segments: [
         { text: "매출 성장률이 " }, highlight(pct(rate), "warning"), { text: "로 낮아, 새로운 성장 동력이 필요한 시점이에요." },
       ] });
     } else {
-      cards.push({ icon: "⚠️", title: "매출이 감소하고 있어요", segments: [
+      cards.push({ icon: "revenue", title: "매출이 감소하고 있어요", segments: [
         { text: "매출이 " }, highlight(pct(rate), "negative"), { text: " 줄었어요. 시장 수요나 경쟁 환경 변화를 주목할 필요가 있어요." },
       ] });
     }
@@ -97,15 +113,15 @@ function generateWhyCards(
   if (financial?.debtRatio != null) {
     const debt = financial.debtRatio;
     if (debt <= 60) {
-      cards.push({ icon: "🛡️", title: "재무 구조가 매우 탄탄해요", segments: [
+      cards.push({ icon: "debt", title: "재무 구조가 매우 탄탄해요", segments: [
         { text: "부채비율이 " }, highlight(pct(debt, false), "positive"), { text: "로 낮아, 재무 건전성이 우수해요." },
       ] });
     } else if (debt <= 150) {
-      cards.push({ icon: "📋", title: "재무 구조는 무난한 편이에요", segments: [
+      cards.push({ icon: "debt", title: "재무 구조는 무난한 편이에요", segments: [
         { text: "부채비율이 " }, highlight(pct(debt, false), "warning"), { text: "로 업종 평균 수준이에요." },
       ] });
     } else {
-      cards.push({ icon: "⚠️", title: "부채 부담이 높은 편이에요", segments: [
+      cards.push({ icon: "debt", title: "부채 부담이 높은 편이에요", segments: [
         { text: "부채비율이 " }, highlight(pct(debt, false), "negative"), { text: "로 높아, 금리 환경 변화에 취약할 수 있어요." },
       ] });
     }
@@ -115,19 +131,19 @@ function generateWhyCards(
   if (financial?.roe != null) {
     const roe = financial.roe;
     if (roe >= 15) {
-      cards.push({ icon: "💪", title: "자본 효율이 매우 높아요", segments: [
+      cards.push({ icon: "roe", title: "자본 효율이 매우 높아요", segments: [
         { text: "ROE가 " }, highlight(pct(roe), "positive"), { text: "로, 투자한 자본 대비 수익 창출 능력이 탁월해요." },
       ] });
     } else if (roe >= 8) {
-      cards.push({ icon: "💡", title: "자본 효율이 양호해요", segments: [
+      cards.push({ icon: "roe", title: "자본 효율이 양호해요", segments: [
         { text: "ROE가 " }, highlight(pct(roe), "positive"), { text: "로 안정적인 수익을 내고 있어요." },
       ] });
     } else if (roe >= 0) {
-      cards.push({ icon: "📉", title: "자본 효율이 낮아요", segments: [
+      cards.push({ icon: "roe", title: "자본 효율이 낮아요", segments: [
         { text: "ROE가 " }, highlight(pct(roe), "warning"), { text: "로, 자본 활용 효율 개선이 필요해요." },
       ] });
     } else {
-      cards.push({ icon: "⚠️", title: "자본이 손실을 내고 있어요", segments: [
+      cards.push({ icon: "roe", title: "자본이 손실을 내고 있어요", segments: [
         { text: "ROE가 " }, highlight(pct(roe), "negative"), { text: "로 마이너스예요. 수익성 회복이 중요한 과제예요." },
       ] });
     }
@@ -139,25 +155,25 @@ function generateWhyCards(
     const ma20 = metrics.ma20;
     const ma60 = metrics.ma60;
     if (m1 >= 10) {
-      cards.push({ icon: "🚀", title: "주가 상승 모멘텀이 강해요", segments: [
+      cards.push({ icon: "momentum", title: "주가 상승 모멘텀이 강해요", segments: [
         { text: "최근 한 달 수익률이 " }, highlight(pct(m1), "positive"), { text: "로, 시장의 강한 기대를 받고 있어요." },
       ] });
     } else if (m1 >= 0) {
       if (ma20 != null && ma60 != null && ma20 > ma60) {
-        cards.push({ icon: "📊", title: "주가가 상승 추세예요", segments: [
+        cards.push({ icon: "momentum", title: "주가가 상승 추세예요", segments: [
           { text: "20일 이동평균이 60일 이동평균 위에 위치하며 상승 흐름을 유지하고 있어요." },
         ] });
       } else {
-        cards.push({ icon: "📊", title: "주가가 보합세를 유지해요", segments: [
+        cards.push({ icon: "momentum", title: "주가가 보합세를 유지해요", segments: [
           { text: "최근 한 달 수익률이 " }, highlight(pct(m1), "warning"), { text: "로, 횡보 구간에서 방향성을 탐색 중이에요." },
         ] });
       }
     } else if (m1 >= -10) {
-      cards.push({ icon: "📉", title: "주가가 조정을 받고 있어요", segments: [
+      cards.push({ icon: "momentum", title: "주가가 조정을 받고 있어요", segments: [
         { text: "최근 한 달 수익률이 " }, highlight(pct(m1), "warning"), { text: "로, 단기 조정 구간에 있어요." },
       ] });
     } else {
-      cards.push({ icon: "⚠️", title: "주가가 큰 폭으로 하락했어요", segments: [
+      cards.push({ icon: "momentum", title: "주가가 큰 폭으로 하락했어요", segments: [
         { text: "최근 한 달 수익률이 " }, highlight(pct(m1), "negative"), { text: "로, 시장 신뢰 회복이 필요한 상황이에요." },
       ] });
     }
@@ -166,7 +182,7 @@ function generateWhyCards(
   // 최소 2개 보장
   if (cards.length < 2) {
     cards.push({
-      icon: "🔍",
+      icon: "info",
       title: "데이터를 분석하고 있어요",
       segments: [{ text: "더 많은 재무 데이터가 수집되면 상세한 분석을 제공할 수 있어요." }],
     });
@@ -302,15 +318,7 @@ export function mapToDetail(company: any): CompanyDetailResponse {
   const recentPrices = company.stockPrices ?? [];
 
   return {
-    id: company.id,
-    corpCode: company.corpCode,
-    corpName: company.corpName,
-    stockCode: company.stockCode,
-    indutyCode: company.indutyCode,
-    indutyName: company.indutyName,
-    sector: company.sector,
-    market: company.market,
-    ceoName: company.ceoName,
+    ...toCompanyResponse(company),
 
     latestFinancial: latestFinancial
       ? {

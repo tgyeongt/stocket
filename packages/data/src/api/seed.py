@@ -5,20 +5,14 @@ from __future__ import annotations
 실행: python -m src.api.seed
 """
 import time
-from datetime import date, timedelta
 
 from src.clients.dart_client import DartClient
 from src.clients.kis_client import KisClient
 from src.database.connection import get_session
 from src.repositories.company_repository import CompanyRepository
-from src.repositories.financial_repository import FinancialRepository
-from src.repositories.stock_repository import StockRepository
-from src.services.financial_sync_service import (
-    FinancialSyncService,
-    _parse_items,
-    _calc_metrics,
-)
+from src.services.financial_sync_service import FinancialSyncService
 from src.services.metrics_service import MetricsService
+from src.services.stock_sync_service import StockSyncService
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -60,8 +54,8 @@ def seed():
 
         with get_session() as session:
             company_repo = CompanyRepository(session)
-            financial_repo = FinancialRepository(session)
-            stock_repo = StockRepository(session)
+            financial_sync = FinancialSyncService(session, dart)
+            stock_sync = StockSyncService(session, kis)
 
             for corp_code in corp_codes:
                 logger.info(f"=== {corp_code} 시드 시작 ===")
@@ -86,69 +80,16 @@ def seed():
                     "market": market_map.get(info.corp_cls),
                     "ceo_name": info.ceo_nm,
                 })
-                session.flush()
+                session.commit()
                 time.sleep(0.3)
 
-                company = company_repo.find_by_corp_code(corp_code)
-                if not company:
-                    continue
-
                 # 2. 재무제표 (전년도 + 전전년도 성장률용)
-                current_year = date.today().year - 1
-                for year in [current_year - 1, current_year]:
-                    items, report_type = [], "CFS"
-                    for fs_div in ("CFS", "OFS"):
-                        items = dart.fetch_financial_statement(corp_code, year, fs_div)  # type: ignore
-                        if items:
-                            report_type = fs_div
-                            break
-
-                    if not items:
-                        logger.debug(f"[{corp_code}/{year}] 재무 없음")
-                        time.sleep(0.5)
-                        continue
-
-                    curr = _parse_items(items)
-                    prev_rec = financial_repo.find_by_year(company.id, year - 1, report_type)
-                    prev = {"revenue": prev_rec.revenue} if prev_rec else None
-                    metrics = _calc_metrics(curr, prev)
-
-                    financial_repo.upsert({
-                        "company_id": company.id,
-                        "year": year,
-                        "quarter": None,
-                        "report_type": report_type,
-                        **curr,
-                        **metrics,
-                    })
-                    logger.info(f"[{corp_code}/{year}] 재무 저장 완료")
-                    time.sleep(0.5)
+                fin_result = financial_sync.sync_one(corp_code)
+                logger.info(f"[{corp_code}] 재무 동기화: {fin_result}")
 
                 # 3. 주가 (최근 180일)
-                if company.stockCode:
-                    end_dt = date.today()
-                    start_dt = end_dt - timedelta(days=180)
-                    prices = kis.fetch_daily_prices(
-                        company.stockCode,
-                        start_dt.strftime("%Y%m%d"),
-                        end_dt.strftime("%Y%m%d"),
-                    )
-                    for p in prices:
-                        price_date = date(int(p.date[:4]), int(p.date[4:6]), int(p.date[6:]))
-                        stock_repo.upsert_price({
-                            "company_id": company.id,
-                            "date": price_date,
-                            "open": p.open,
-                            "high": p.high,
-                            "low": p.low,
-                            "close": p.close,
-                            "volume": p.volume,
-                            "change_rate": p.change_rate,
-                        })
-                    logger.info(f"[{corp_code}] 주가 {len(prices)}건 저장")
-                    time.sleep(0.2)
-
-                session.commit()
+                stock_result = stock_sync.sync_one(corp_code, days=180)
+                logger.info(f"[{corp_code}] 주가 동기화: {stock_result}")
 
                 # 4. 파생 지표 계산
                 MetricsService(session).calc_one(corp_code)

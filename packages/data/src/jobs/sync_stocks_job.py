@@ -24,7 +24,7 @@ def run(corp_codes: list[str] | None = None, days: int = 120) -> None:
     try:
         with get_session() as session:
             if not corp_codes:
-                corp_codes = CompanyRepository(session).find_all_corp_codes(listed_only=True)
+                corp_codes = CompanyRepository(session).find_all_corp_codes()
 
             logger.info(f"=== 주가 동기화 시작: {len(corp_codes)}개 기업 ===")
 

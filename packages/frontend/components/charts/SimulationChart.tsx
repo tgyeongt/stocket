@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { ACCENT, TOOLTIP_STYLE, TOOLTIP_LABEL_STYLE, axisTick } from "./chart-theme";
 
 interface SimulationChartProps {
   data: number[];
@@ -25,25 +26,25 @@ export default function SimulationChart({ data }: SimulationChartProps) {
         <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="simGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#22C55E" stopOpacity={0.12} />
-              <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+              <stop offset="5%" stopColor={ACCENT} stopOpacity={0.12} />
+              <stop offset="95%" stopColor={ACCENT} stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
           <XAxis
             dataKey="label"
-            tick={{ fill: "#94A3B8", fontSize: 11 }}
+            tick={axisTick(11)}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: "#94A3B8", fontSize: 11 }}
+            tick={axisTick(11)}
             axisLine={false}
             tickLine={false}
           />
           <Tooltip
-            contentStyle={{ background: "#1A1D27", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8, color: "#F1F5F9", fontSize: 12 }}
-            labelStyle={{ color: "#94A3B8" }}
+            contentStyle={TOOLTIP_STYLE}
+            labelStyle={TOOLTIP_LABEL_STYLE}
             formatter={(value) => {
               if (typeof value !== "number") return [String(value), "성장 지수"];
               const diff = value - 100;
@@ -54,11 +55,11 @@ export default function SimulationChart({ data }: SimulationChartProps) {
           <Area
             type="monotone"
             dataKey="value"
-            stroke="#22C55E"
+            stroke={ACCENT}
             strokeWidth={2.5}
             fill="url(#simGradient)"
-            dot={{ fill: "#22C55E", r: 5, strokeWidth: 0 }}
-            activeDot={{ r: 6, fill: "#22C55E" }}
+            dot={{ fill: ACCENT, r: 5, strokeWidth: 0 }}
+            activeDot={{ r: 6, fill: ACCENT }}
           />
         </AreaChart>
       </ResponsiveContainer>

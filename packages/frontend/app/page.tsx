@@ -39,8 +39,8 @@ export default function Home() {
       )}
 
       {loading && (
-        <div className="flex items-center justify-center gap-3 py-20 text-[#94A3B8] text-[15px]">
-          <span className="animate-spin text-green-400">⟳</span>
+        <div className="flex items-center justify-center gap-3 py-20 text-muted text-[15px]">
+          <span className="spinner" />
           분석 중이에요…
         </div>
       )}

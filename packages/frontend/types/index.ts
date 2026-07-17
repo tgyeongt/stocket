@@ -1,56 +1,14 @@
-export interface AxisScores {
-  growth: number;      // 성장성
-  stability: number;   // 안정성
-  profitability: number; // 수익성
-  momentum: number;    // 시장 모멘텀
-}
+// CompanyData는 backend의 CompanyFrontendResponse DTO를 그대로 재사용한다
+// (프론트/백엔드에서 손으로 복사한 두 벌의 동일한 타입을 두지 않기 위함).
+import type { CompanyFrontendResponse } from "@backend/company.dto";
 
-export interface WhySegment {
-  text: string;
-  tone?: "positive" | "warning" | "negative";
-}
-
-export interface WhyCard {
-  icon: string;
-  title: string;
-  segments: WhySegment[];
-}
-
-export interface FinTag {
-  label: string;
-  value: string;
-}
-
-export interface Peer {
-  name: string;
-  correlation: number;
-  score: number;
-}
-
-export interface PricePoint {
-  date: string;   // YYYY-MM-DD
-  price: number;
-}
-
-export interface CompanyData {
-  name: string;
-  sector: string;
-  code: string;
-  score: number;
-  grade: string;
-  axes: AxisScores;
-  why: WhyCard[];
-  tags: FinTag[];
-  peers: Peer[];
-  simulation: {
-    baseMarketRate: number;
-    baseTrend: number;
-    dataYear?: number;
-    revenueGrowthRate?: number | null;
-    momentum6m?: number | null;
-  };
-  priceHistory: PricePoint[];
-}
+export type CompanyData = CompanyFrontendResponse;
+export type AxisScores = CompanyData["axes"];
+export type WhyCard = CompanyData["why"][number];
+export type WhySegment = WhyCard["segments"][number];
+export type FinTag = CompanyData["tags"][number];
+export type Peer = CompanyData["peers"][number];
+export type PricePoint = CompanyData["priceHistory"][number];
 
 export interface SimulationResult {
   year1: number;

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useRef, useState } from "react";
+import { useCompanySuggestions, useClickOutside } from "@/hooks/useCompanySuggestions";
 
 interface SearchInputProps {
   label: string;
@@ -11,44 +12,12 @@ interface SearchInputProps {
 
 export default function SearchInput({ label, color, onSelect, loading }: SearchInputProps) {
   const [input, setInput] = useState("");
-  const [suggestions, setSuggestions] = useState<{ corpName: string; stockCode: string }[]>([]);
-  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (selected) return;
-    timerRef.current = setTimeout(async () => {
-      const q = input.trim();
-      if (!q) {
-        setSuggestions([]);
-        setOpen(false);
-        return;
-      }
-      try {
-        const res = await fetch(`/api/companies/search?query=${encodeURIComponent(q)}&limit=6`);
-        if (!res.ok) return;
-        const body = await res.json();
-        const items = (body.data ?? []).map((d: { corpName?: string; name?: string; stockCode?: string; code?: string }) => ({
-          corpName: d.corpName ?? d.name ?? "",
-          stockCode: d.stockCode ?? d.code ?? "",
-        }));
-        setSuggestions(items);
-        setOpen(items.length > 0);
-      } catch { /* 자동완성 실패 무시 */ }
-    }, 300);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [input, selected]);
+  const { suggestions, setSuggestions, open, setOpen } = useCompanySuggestions(input, selected, 6);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  useClickOutside(wrapperRef, () => setOpen(false));
 
   function select(name: string) {
     if (!name.trim()) return;
