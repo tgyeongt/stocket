@@ -14,21 +14,21 @@ const TONE_CLASS: Record<NonNullable<WhySegment["tone"]>, string> = {
 
 export default function ExplainSection({ company }: ExplainSectionProps) {
   return (
-    <Section step={3} label="왜 이런 성장세를 보이는가?">
+    <Section label="왜 이런 성장세를 보이는가?">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-[10px]">
         {company.why.map((card, i) => (
           <div
             key={i}
-            className="bg-[#1A1D27] border border-[rgba(255,255,255,0.07)] rounded-[12px] px-[18px] py-4 flex gap-3 items-start"
+            className="bg-surface border border-border rounded-[12px] px-[18px] py-4 flex gap-3 items-start"
           >
-            <div className="w-9 h-9 rounded-[10px] bg-[rgba(34,197,94,0.12)] flex items-center justify-center flex-shrink-0 text-[17px]">
+            <div className="w-9 h-9 rounded-[10px] bg-accent-soft flex items-center justify-center flex-shrink-0 text-[17px]">
               {card.icon}
             </div>
             <div className="pt-0.5">
               <strong className="block text-[13px] font-semibold mb-1">
                 {card.title}
               </strong>
-              <span className="text-[12px] text-[#94A3B8] leading-[1.5]">
+              <span className="text-[12px] text-muted leading-[1.5]">
                 {card.segments.map((segment, j) =>
                   segment.tone ? (
                     <strong key={j} className={TONE_CLASS[segment.tone]}>
