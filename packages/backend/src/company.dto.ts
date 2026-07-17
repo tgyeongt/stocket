@@ -110,7 +110,7 @@ export interface CompanyFrontendResponse {
     momentum: number;
   };
   why: Array<{
-    icon: string;
+    icon: "revenue" | "debt" | "roe" | "momentum" | "info";
     title: string;
     // 문장을 segment로 나눠 전달 — tone은 강조할 값의 의미(긍정/주의/부정)만 나타내고,
     // 실제 색상/굵기 등 표현은 프론트엔드가 결정한다.

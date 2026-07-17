@@ -1,6 +1,13 @@
-import type { CompanyData, WhySegment } from "@/types";
+import type { CompanyData, WhyCard, WhySegment } from "@/types";
 import Section from "@/components/sections/Section";
 import FinTag from "@/components/ui/FinTag";
+import {
+  GrowthIcon,
+  StabilityIcon,
+  ProfitabilityIcon,
+  MomentumIcon,
+  InfoIcon,
+} from "@/components/icons/axis-icons";
 
 interface ExplainSectionProps {
   company: CompanyData;
@@ -12,36 +19,47 @@ const TONE_CLASS: Record<NonNullable<WhySegment["tone"]>, string> = {
   negative: "text-red-400",
 };
 
+const CARD_ICON: Record<WhyCard["icon"], typeof GrowthIcon> = {
+  revenue: GrowthIcon,
+  debt: StabilityIcon,
+  roe: ProfitabilityIcon,
+  momentum: MomentumIcon,
+  info: InfoIcon,
+};
+
 export default function ExplainSection({ company }: ExplainSectionProps) {
   return (
     <Section label="왜 이런 성장세를 보이는가?">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-[10px]">
-        {company.why.map((card, i) => (
-          <div
-            key={i}
-            className="bg-surface border border-border rounded-[12px] px-[18px] py-4 flex gap-3 items-start"
-          >
-            <div className="w-9 h-9 rounded-[10px] bg-accent-soft flex items-center justify-center flex-shrink-0 text-[17px]">
-              {card.icon}
+        {company.why.map((card, i) => {
+          const Icon = CARD_ICON[card.icon];
+          return (
+            <div
+              key={i}
+              className="bg-surface border border-border rounded-[12px] px-[18px] py-4 flex gap-3 items-start"
+            >
+              <div className="w-9 h-9 rounded-[10px] bg-accent-soft flex items-center justify-center flex-shrink-0 text-accent">
+                <Icon />
+              </div>
+              <div className="pt-0.5">
+                <strong className="block text-[13px] font-semibold mb-1">
+                  {card.title}
+                </strong>
+                <span className="text-[12px] text-muted leading-[1.5]">
+                  {card.segments.map((segment, j) =>
+                    segment.tone ? (
+                      <strong key={j} className={TONE_CLASS[segment.tone]}>
+                        {segment.text}
+                      </strong>
+                    ) : (
+                      <span key={j}>{segment.text}</span>
+                    ),
+                  )}
+                </span>
+              </div>
             </div>
-            <div className="pt-0.5">
-              <strong className="block text-[13px] font-semibold mb-1">
-                {card.title}
-              </strong>
-              <span className="text-[12px] text-muted leading-[1.5]">
-                {card.segments.map((segment, j) =>
-                  segment.tone ? (
-                    <strong key={j} className={TONE_CLASS[segment.tone]}>
-                      {segment.text}
-                    </strong>
-                  ) : (
-                    <span key={j}>{segment.text}</span>
-                  ),
-                )}
-              </span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex gap-2.5 flex-wrap mb-10">

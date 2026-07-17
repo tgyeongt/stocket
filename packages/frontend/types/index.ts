@@ -11,7 +11,7 @@ export interface WhySegment {
 }
 
 export interface WhyCard {
-  icon: string;
+  icon: "revenue" | "debt" | "roe" | "momentum" | "info";
   title: string;
   segments: WhySegment[];
 }
