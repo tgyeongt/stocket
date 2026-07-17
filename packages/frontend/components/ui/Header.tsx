@@ -7,7 +7,7 @@ export default function Header() {
     <header className="flex items-center justify-between mb-10 gap-[12px]">
       <Link href="/" className="flex flex-col">
         <Image src={Logo} alt="logo" className="w-[90px]" />
-        <p className="text-[#93A3B8] text-[12px] mt-[2px] ml-[5px]">
+        <p className="text-[#93A3B8] text-[12px] mt-[3px]">
           초보 투자자를 위한 성장 가능성 분석 플랫폼
         </p>
       </Link>
