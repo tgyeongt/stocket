@@ -30,6 +30,8 @@ class DailyPrice:
 
 
 class KisClient:
+    BASE_URL = "https://openapi.koreainvestment.com:9443"
+
     def __init__(self) -> None:
         self._session = requests.Session()
         self._session.headers.update({"content-type": "application/json"})
@@ -73,7 +75,7 @@ class KisClient:
 
         try:
             resp = self._session.post(
-                f"{settings.kis_base_url}/oauth2/tokenP",
+                f"{self.BASE_URL}/oauth2/tokenP",
                 json={
                     "grant_type": "client_credentials",
                     "appkey":     settings.kis_app_key,
@@ -155,7 +157,7 @@ class KisClient:
     ) -> list[DailyPrice]:
         try:
             resp = self._session.get(
-                f"{settings.kis_base_url}/uapi/domestic-stock/v1/quotations/inquire-daily-price",
+                f"{self.BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-daily-price",
                 headers=self._auth_headers("FHKST01010400"),
                 params={
                     "FID_COND_MRKT_DIV_CODE": "J",

@@ -29,6 +29,20 @@ export class CompanyController extends Controller {
     super();
   }
 
+  // 컨트롤러 4개 엔드포인트가 공유하는 try/catch → setStatus → ApiError 패턴
+  private async wrap<T>(
+    errorStatus: number,
+    fn: () => Promise<T>,
+  ): Promise<{ success: true; data: T } | ApiError> {
+    try {
+      const data = await fn();
+      return { success: true, data };
+    } catch (err) {
+      this.setStatus(errorStatus);
+      return { success: false, error: toErrorMessage(err) };
+    }
+  }
+
   /**
    * 기업 검색 (페이징). corpName 또는 stockCode에 부분 일치.
    */
@@ -37,9 +51,7 @@ export class CompanyController extends Controller {
     @Queries() query: SearchCompanyQuery,
   ): Promise<{ success: true } & PaginatedCompaniesResponse> {
     const data = await this.companyService.search({
-      query: query.query,
-      market: query.market,
-      sector: query.sector,
+      ...query,
       page: query.page ?? 1,
       limit: query.limit ?? 10,
     });
@@ -54,13 +66,7 @@ export class CompanyController extends Controller {
   public async getByName(
     @Path() name: string,
   ): Promise<{ success: true; data: CompanyFrontendResponse } | ApiError> {
-    try {
-      const data = await this.companyService.getByName(name);
-      return { success: true, data };
-    } catch (err) {
-      this.setStatus(404);
-      return { success: false, error: toErrorMessage(err) };
-    }
+    return this.wrap(404, () => this.companyService.getByName(name));
   }
 
   /**
@@ -72,13 +78,7 @@ export class CompanyController extends Controller {
   public async getDetail(
     @Path() corpCode: string,
   ): Promise<{ success: true; data: CompanyDetailResponse } | ApiError> {
-    try {
-      const data = await this.companyService.getDetail(corpCode);
-      return { success: true, data };
-    } catch (err) {
-      this.setStatus(404);
-      return { success: false, error: toErrorMessage(err) };
-    }
+    return this.wrap(404, () => this.companyService.getDetail(corpCode));
   }
 
   /**
@@ -93,13 +93,7 @@ export class CompanyController extends Controller {
     @Path() corpCode: string,
     @Query() limit = 5,
   ): Promise<{ success: true; data: SimilarCompanyResponse[] } | ApiError> {
-    try {
-      const data = await this.companyService.getSimilar({ corpCode, limit });
-      return { success: true, data };
-    } catch (err) {
-      this.setStatus(404);
-      return { success: false, error: toErrorMessage(err) };
-    }
+    return this.wrap(404, () => this.companyService.getSimilar({ corpCode, limit }));
   }
 
   /**
@@ -109,12 +103,6 @@ export class CompanyController extends Controller {
   public async compare(
     @Body() body: CompareCompaniesRequestBody,
   ): Promise<{ success: true; data: CompanyCompareResponse } | ApiError> {
-    try {
-      const data = await this.companyService.compare(body.corpCodes);
-      return { success: true, data };
-    } catch (err) {
-      this.setStatus(500);
-      return { success: false, error: toErrorMessage(err) };
-    }
+    return this.wrap(500, () => this.companyService.compare(body.corpCodes));
   }
 }

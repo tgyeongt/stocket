@@ -2,7 +2,23 @@
 //
 // Prisma 모델 → 프론트엔드 응답 DTO 변환 (순수 함수 모음, DB/네트워크 접근 없음)
 
-import type { CompanyDetailResponse, CompanyFrontendResponse } from "./company.dto";
+import type { CompanyDetailResponse, CompanyFrontendResponse, CompanyResponse } from "./company.dto";
+
+// ── Prisma Company → CompanyResponse 공통 필드 변환 ────────────
+
+export function toCompanyResponse(c: any): CompanyResponse {
+  return {
+    id: c.id,
+    corpCode: c.corpCode,
+    corpName: c.corpName,
+    stockCode: c.stockCode,
+    indutyCode: c.indutyCode,
+    indutyName: c.indutyName,
+    sector: c.sector,
+    market: c.market,
+    ceoName: c.ceoName,
+  };
+}
 
 // BigInt → string 직렬화 헬퍼
 export const bigintToStr = (v: bigint | number | null | undefined): string | null =>
@@ -302,15 +318,7 @@ export function mapToDetail(company: any): CompanyDetailResponse {
   const recentPrices = company.stockPrices ?? [];
 
   return {
-    id: company.id,
-    corpCode: company.corpCode,
-    corpName: company.corpName,
-    stockCode: company.stockCode,
-    indutyCode: company.indutyCode,
-    indutyName: company.indutyName,
-    sector: company.sector,
-    market: company.market,
-    ceoName: company.ceoName,
+    ...toCompanyResponse(company),
 
     latestFinancial: latestFinancial
       ? {

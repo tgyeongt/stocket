@@ -1,19 +1,7 @@
 import type { CompanyData } from "@/types";
 import GaugeChart from "@/components/charts/GaugeChart";
 import Section from "@/components/sections/Section";
-import {
-  GrowthIcon,
-  StabilityIcon,
-  ProfitabilityIcon,
-  MomentumIcon,
-} from "@/components/icons/axis-icons";
-
-const AXIS_META = [
-  { key: "growth" as const, Icon: GrowthIcon, label: "성장성" },
-  { key: "stability" as const, Icon: StabilityIcon, label: "안정성" },
-  { key: "profitability" as const, Icon: ProfitabilityIcon, label: "수익성" },
-  { key: "momentum" as const, Icon: MomentumIcon, label: "시장 모멘텀" },
-];
+import { AXES } from "@/components/icons/axis-icons";
 
 interface ScoreSectionProps {
   company: CompanyData;
@@ -44,13 +32,14 @@ export default function ScoreSection({ company }: ScoreSectionProps) {
         <div className="h-px bg-border mb-6" />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          {AXIS_META.map(({ key, Icon, label }) => {
+          {AXES.map(({ key, Icon, label }) => {
             const val = company.axes[key];
+            const displayLabel = key === "momentum" ? "시장 모멘텀" : label;
             return (
               <div key={key}>
                 <div className="flex items-center gap-1.5 mb-2 text-muted">
                   <Icon className="flex-shrink-0" />
-                  <span className="text-[11px]">{label}</span>
+                  <span className="text-[11px]">{displayLabel}</span>
                 </div>
                 <div className="text-[18px] font-semibold mb-1.5">{val}</div>
                 <div className="h-[2px] bg-surface-alt rounded-full overflow-hidden">

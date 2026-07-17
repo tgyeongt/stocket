@@ -99,7 +99,6 @@ export interface PaginatedCompaniesResponse {
 export interface CompanyFrontendResponse {
   name: string;
   sector: string;
-  indutyCode?: string | null;
   code: string;
   score: number;
   grade: string;
@@ -150,19 +149,6 @@ export interface SearchCompanyQuery {
    * @maximum 50
    */
   limit?: number;
-}
-
-export interface SearchCompanyRequest {
-  query: string;
-  market?: MarketType;
-  sector?: string;
-  page: number;
-  limit: number;
-}
-
-export interface GetSimilarRequest {
-  corpCode: string;
-  limit: number;
 }
 
 export interface CompareCompaniesRequestBody {

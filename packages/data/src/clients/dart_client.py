@@ -16,11 +16,10 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 settings = get_settings()
 
-ReportCode = Literal["11011", "11012", "11013", "11014"]
-# 11011: 사업보고서 | 11012: 반기보고서 | 11013: 1분기 | 11014: 3분기
-
 FsDiv = Literal["CFS", "OFS"]
 # CFS: 연결재무제표 | OFS: 별도재무제표
+
+REQUEST_DELAY = 0.5  # DART 호출 간 최소 간격(초)
 
 
 @dataclass
@@ -116,7 +115,6 @@ class DartClient:
         corp_code: str,
         year: int,
         fs_div: FsDiv = "CFS",
-        reprt_code: ReportCode = "11011",
     ) -> list[FinancialItem]:
         try:
             resp = self._session.get(
@@ -124,7 +122,7 @@ class DartClient:
                 params={
                     "corp_code":  corp_code,
                     "bsns_year":  year,
-                    "reprt_code": reprt_code,
+                    "reprt_code": "11011",  # 사업보고서
                     "fs_div":     fs_div,
                 },
                 timeout=15,

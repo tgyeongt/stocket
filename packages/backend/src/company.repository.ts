@@ -12,14 +12,6 @@ export class CompanyRepository {
 
   // ── 단일 조회 ────────────────────────────────────────────────
 
-  findByCorpCode(corpCode: string) {
-    return this.prisma.company.findUnique({
-      where: {
-        corpCode,
-      },
-    });
-  }
-
   findByCorpCodeOrThrow(corpCode: string) {
     return this.prisma.company.findUniqueOrThrow({
       where: {
@@ -35,14 +27,6 @@ export class CompanyRepository {
           take: 1,
         },
         score: true,
-      },
-    });
-  }
-
-  findById(id: string) {
-    return this.prisma.company.findUnique({
-      where: {
-        id,
       },
     });
   }
@@ -313,41 +297,4 @@ export class CompanyRepository {
     return result[0] ?? null;
   }
 
-  // ── upsert ───────────────────────────────────────────────────
-
-  upsert(data: Prisma.CompanyUncheckedCreateInput) {
-    return this.prisma.company.upsert({
-      where: {
-        corpCode: data.corpCode,
-      },
-      create: data,
-      update: {
-        corpName: data.corpName,
-        stockCode: data.stockCode,
-        indutyCode: data.indutyCode,
-        indutyName: data.indutyName,
-        sector: data.sector,
-        market: data.market,
-        ceoName: data.ceoName,
-      },
-    });
-  }
-
-  // ── 전체 목록 ────────────────────────────────────────────────
-
-  findAllCorpCodes(withStockOnly = true) {
-    return this.prisma.company.findMany({
-      where: withStockOnly
-        ? {
-            stockCode: {
-              not: null,
-            },
-          }
-        : undefined,
-      select: {
-        corpCode: true,
-        stockCode: true,
-      },
-    });
-  }
 }

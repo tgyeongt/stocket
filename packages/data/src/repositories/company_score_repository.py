@@ -1,21 +1,9 @@
 from __future__ import annotations
 
-import uuid
-
 from sqlalchemy.orm import Session
 
 from src.database.models import CompanyScore
-
-# snake_case 입력 키 → camelCase DB 컬럼명
-_FIELD_MAP = {
-    "company_id": "companyId",
-    "growth": "growth",
-    "stability": "stability",
-    "profitability": "profitability",
-    "momentum": "momentum",
-    "overall": "overall",
-    "grade": "grade",
-}
+from src.repositories._upsert import snake_to_camel, upsert_by_filter
 
 
 class CompanyScoreRepository:
@@ -23,18 +11,8 @@ class CompanyScoreRepository:
         self._s = session
 
     def upsert(self, data: dict) -> None:
-        mapped = {_FIELD_MAP.get(k, k): v for k, v in data.items()}
-        existing = (
-            self._s.query(CompanyScore)
-            .filter_by(companyId=mapped["companyId"])
-            .first()
-        )
-        if existing:
-            for key, val in mapped.items():
-                if key != "companyId" and hasattr(existing, key):
-                    setattr(existing, key, val)
-        else:
-            self._s.add(CompanyScore(id=str(uuid.uuid4()), **mapped))
+        mapped = {snake_to_camel(k): v for k, v in data.items()}
+        upsert_by_filter(self._s, CompanyScore, mapped, ["companyId"])
 
     def find_by_company_id(self, company_id: str) -> CompanyScore | None:
         return self._s.query(CompanyScore).filter_by(companyId=company_id).first()

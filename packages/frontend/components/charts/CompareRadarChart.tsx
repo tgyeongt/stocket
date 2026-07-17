@@ -8,13 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { CompanyData } from "@/types";
-
-const AXES = [
-  { key: "growth" as const, label: "성장성" },
-  { key: "stability" as const, label: "안정성" },
-  { key: "profitability" as const, label: "수익성" },
-  { key: "momentum" as const, label: "모멘텀" },
-];
+import { AXES } from "@/app/compare/constants";
 
 interface Props {
   a: CompanyData;

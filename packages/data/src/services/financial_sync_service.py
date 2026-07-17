@@ -7,15 +7,13 @@ import numpy as np
 import pandas as pd
 from sqlalchemy.orm import Session
 
-from src.clients.dart_client import DartClient, FinancialItem
-from src.config.settings import get_settings
+from src.clients.dart_client import REQUEST_DELAY, DartClient, FinancialItem
 from src.repositories.company_repository import CompanyRepository
 from src.repositories.financial_repository import FinancialRepository
 from src.utils.date import default_financial_years
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
-settings = get_settings()
 
 # DART 계정과목 → 필드명 매핑
 ACCOUNT_MAP: dict[str, str] = {
@@ -107,21 +105,6 @@ def _calc_ratios_frame(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _calc_metrics(current: dict, prev: dict | None) -> dict:
-    row = {
-        "revenue": current.get("revenue"),
-        "operating_profit": current.get("operating_profit"),
-        "net_income": current.get("net_income"),
-        "total_assets": current.get("total_assets"),
-        "total_liability": current.get("total_liability"),
-        "total_equity": current.get("total_equity"),
-        "prev_revenue": prev.get("revenue") if prev else None,
-    }
-    df = _calc_ratios_frame(pd.DataFrame([row]))
-    result = df.iloc[0][_RATIO_COLUMNS].to_dict()
-    return {k: (None if pd.isna(v) else v) for k, v in result.items()}
-
-
 class FinancialSyncService:
     def __init__(
         self,
@@ -159,12 +142,12 @@ class FinancialSyncService:
             if not items:
                 skipped += 1
                 logger.debug(f"[{corp_code}/{year}] 데이터 없음")
-                time.sleep(settings.dart_request_delay)
+                time.sleep(REQUEST_DELAY)
                 continue
 
             parsed = _parse_items(items)
             rows.append({"year": year, "report_type": report_type, **parsed})
-            time.sleep(settings.dart_request_delay)
+            time.sleep(REQUEST_DELAY)
 
         if not rows:
             self._session.commit()

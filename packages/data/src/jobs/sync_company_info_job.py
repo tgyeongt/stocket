@@ -8,14 +8,12 @@ from __future__ import annotations
 
 import time
 
-from src.clients.dart_client import DartClient
-from src.config.settings import get_settings
+from src.clients.dart_client import REQUEST_DELAY, DartClient
 from src.database.connection import get_session
 from src.repositories.company_repository import CompanyRepository
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
-settings = get_settings()
 
 
 def run(limit: int = 1000) -> None:
@@ -42,7 +40,7 @@ def run(limit: int = 1000) -> None:
                         "market":     _corp_cls_to_market(info.corp_cls),
                     })
                     updated += 1
-                time.sleep(settings.dart_request_delay)
+                time.sleep(REQUEST_DELAY)
 
             session.commit()
             logger.info(f"기업 상세정보 보완 완료: {updated}/{len(corp_codes)}개")

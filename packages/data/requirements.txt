@@ -12,9 +12,5 @@ tzdata
 urllib3
 sqlalchemy
 psycopg2-binary
-httpx
 pydantic-settings
-loguru
-xmltodict
-apscheduler
 schedule

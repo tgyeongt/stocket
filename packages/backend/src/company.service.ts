@@ -1,15 +1,13 @@
 // src/services/company.service.ts
 
-import { Company } from "@prisma/client";
 import { CompanyRepository } from "./company.repository";
-import { mapToFrontend, mapToDetail, pickClosestByGrowthPattern } from "./company.mapper";
+import { mapToFrontend, mapToDetail, pickClosestByGrowthPattern, toCompanyResponse } from "./company.mapper";
 import type {
   CompanyDetailResponse,
   CompanyCompareResponse,
   CompanyFrontendResponse,
+  MarketType,
   PaginatedCompaniesResponse,
-  SearchCompanyRequest,
-  GetSimilarRequest,
 } from "./company.dto";
 
 // ── Service ───────────────────────────────────────────────────
@@ -73,22 +71,16 @@ export class CompanyService {
 
   // ── 기업 검색 ─────────────────────────────────────────────────
 
-  async search(
-    params: SearchCompanyRequest,
-  ): Promise<PaginatedCompaniesResponse> {
+  async search(params: {
+    query: string;
+    market?: MarketType;
+    sector?: string;
+    page: number;
+    limit: number;
+  }): Promise<PaginatedCompaniesResponse> {
     const { data: dbData, total } = await this.companyRepository.search(params);
 
-    const mapped = dbData.map((c: Company) => ({
-      id: c.id,
-      corpCode: c.corpCode,
-      corpName: c.corpName,
-      stockCode: c.stockCode,
-      indutyCode: c.indutyCode,
-      indutyName: c.indutyName,
-      sector: c.sector,
-      market: c.market,
-      ceoName: c.ceoName,
-    }));
+    const mapped = dbData.map(toCompanyResponse);
 
     return {
       data: mapped,
@@ -101,7 +93,7 @@ export class CompanyService {
 
   // ── 유사 기업 탐색 ─────────────────────────────────────────────
 
-  async getSimilar(params: GetSimilarRequest) {
+  async getSimilar(params: { corpCode: string; limit: number }) {
     const base = await this.companyRepository.findByCorpCodeOrThrow(
       params.corpCode,
     );
@@ -118,15 +110,7 @@ export class CompanyService {
     const similar = pickClosestByGrowthPattern(base, candidates, params.limit);
 
     return similar.map((c) => ({
-      id: c.id,
-      corpCode: c.corpCode,
-      corpName: c.corpName,
-      stockCode: c.stockCode,
-      indutyCode: c.indutyCode,
-      indutyName: c.indutyName,
-      sector: c.sector,
-      market: c.market,
-      ceoName: c.ceoName,
+      ...toCompanyResponse(c),
 
       // 최신 요약 지표
       currentPrice: c.stockMetrics?.[0]?.currentPrice ?? null,

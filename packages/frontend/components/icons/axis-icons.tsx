@@ -76,6 +76,14 @@ export function MomentumIcon({ className = "" }: AxisIconProps) {
   );
 }
 
+// 성장성/안정성/수익성/모멘텀 4축 메타데이터 (ScoreSection, compare 페이지가 공유)
+export const AXES = [
+  { key: "growth" as const, Icon: GrowthIcon, label: "성장성" },
+  { key: "stability" as const, Icon: StabilityIcon, label: "안정성" },
+  { key: "profitability" as const, Icon: ProfitabilityIcon, label: "수익성" },
+  { key: "momentum" as const, Icon: MomentumIcon, label: "모멘텀" },
+];
+
 export function InfoIcon({ className = "" }: AxisIconProps) {
   return (
     <svg

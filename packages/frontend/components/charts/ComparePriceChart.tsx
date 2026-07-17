@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import type { CompanyData } from "@/types";
+import { TOOLTIP_STYLE, axisTick } from "./chart-theme";
 
 interface Props {
   a: CompanyData;
@@ -50,13 +51,13 @@ export default function ComparePriceChart({ a, b }: Props) {
           <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
           <XAxis
             dataKey="date"
-            tick={{ fill: "#94A3B8", fontSize: 10 }}
+            tick={axisTick()}
             axisLine={false}
             tickLine={false}
             interval="preserveStartEnd"
           />
           <YAxis
-            tick={{ fill: "#94A3B8", fontSize: 10 }}
+            tick={axisTick()}
             axisLine={false}
             tickLine={false}
             width={42}
@@ -64,13 +65,7 @@ export default function ComparePriceChart({ a, b }: Props) {
             domain={["auto", "auto"]}
           />
           <Tooltip
-            contentStyle={{
-              background: "#1A1D27",
-              border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 8,
-              color: "#F1F5F9",
-              fontSize: 12,
-            }}
+            contentStyle={TOOLTIP_STYLE}
             formatter={(value) => [typeof value === "number" ? `${value.toFixed(1)}` : String(value), ""]}
           />
           <Legend
