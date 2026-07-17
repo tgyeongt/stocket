@@ -39,3 +39,4 @@ npm-debug.log*
 # IDE / tool-specific
 .vscode/
 .claude/
+.superpowers/
